@@ -427,22 +427,73 @@
             </div>
         </div>
         
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-num">153k</div>
-                <div class="stat-label">Papers</div>
+        <!-- Timeline visualization -->
+        <div style="margin: 60px 0; padding: 40px; background: rgba(139, 92, 246, 0.05); border-radius: 16px; border: 1px solid rgba(139, 92, 246, 0.15);">
+            <h3 style="color: var(--star-white); margin-bottom: 30px; font-size: 1.3em; font-weight: 700;">199 Years of Data</h3>
+            
+            <!-- Timeline bar -->
+            <div style="position: relative; height: 80px; background: rgba(15, 23, 42, 0.4); border-radius: 12px; overflow: hidden; margin-bottom: 40px; border: 1px solid rgba(139, 92, 246, 0.1);">
+                <!-- Background gradient -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.3) 50%, rgba(236, 72, 153, 0.3) 100%);"></div>
+                
+                <!-- Milestones -->
+                <div style="position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;">
+                    <!-- 1827 -->
+                    <div style="text-align: center;">
+                        <div style="width: 2px; height: 100%; background: #3b82f6; position: absolute; left: 20px; top: 0;"></div>
+                        <div style="position: relative; z-index: 1;">
+                            <div style="font-size: 0.9em; color: #3b82f6; font-weight: 700;">1827</div>
+                            <div style="font-size: 0.75em; color: #3b82f6; opacity: 0.8;">Solo</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 1960 -->
+                    <div style="text-align: center;">
+                        <div style="width: 3px; height: 100%; background: #8b5cf6; position: absolute; left: 50%; transform: translateX(-50%);"></div>
+                        <div style="position: relative; z-index: 1;">
+                            <div style="font-size: 0.9em; color: #8b5cf6; font-weight: 700;">1960</div>
+                            <div style="font-size: 0.75em; color: #8b5cf6; opacity: 0.8;">Inflection</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 1996 -->
+                    <div style="text-align: center;">
+                        <div style="width: 3px; height: 100%; background: #ec4899; position: absolute; right: auto; left: calc(50% + 200px);"></div>
+                        <div style="position: relative; z-index: 1;">
+                            <div style="font-size: 0.9em; color: #ec4899; font-weight: 700;">1996</div>
+                            <div style="font-size: 0.75em; color: #ec4899; opacity: 0.8;">Flip</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 2024 -->
+                    <div style="text-align: center;">
+                        <div style="width: 2px; height: 100%; background: #10b981; position: absolute; right: 20px; top: 0;"></div>
+                        <div style="position: relative; z-index: 1;">
+                            <div style="font-size: 0.9em; color: #10b981; font-weight: 700;">2024</div>
+                            <div style="font-size: 0.75em; color: #10b981; opacity: 0.8;">Now</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="stat">
-                <div class="stat-num">427k</div>
-                <div class="stat-label">Authors</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">5</div>
-                <div class="stat-label">Journals</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">199</div>
-                <div class="stat-label">Years</div>
+            
+            <!-- Stats below timeline -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                <div style="text-align: center; padding: 15px;">
+                    <div style="font-size: 1.8em; font-weight: 800; color: #3b82f6; margin-bottom: 5px;">153k</div>
+                    <div style="font-size: 0.9em; color: #cbd5e1; opacity: 0.8;">Papers</div>
+                </div>
+                <div style="text-align: center; padding: 15px;">
+                    <div style="font-size: 1.8em; font-weight: 800; color: #8b5cf6; margin-bottom: 5px;">427k</div>
+                    <div style="font-size: 0.9em; color: #cbd5e1; opacity: 0.8;">Authors</div>
+                </div>
+                <div style="text-align: center; padding: 15px;">
+                    <div style="font-size: 1.8em; font-weight: 800; color: #ec4899; margin-bottom: 5px;">5</div>
+                    <div style="font-size: 0.9em; color: #cbd5e1; opacity: 0.8;">Journals</div>
+                </div>
+                <div style="text-align: center; padding: 15px;">
+                    <div style="font-size: 1.8em; font-weight: 800; color: #10b981; margin-bottom: 5px;">199</div>
+                    <div style="font-size: 0.9em; color: #cbd5e1; opacity: 0.8;">Years</div>
+                </div>
             </div>
         </div>
         
