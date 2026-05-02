@@ -1,0 +1,31 @@
+name: Monthly AstroScanr Update
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # 1st of each month, midnight UTC
+  workflow_dispatch:  # Manual trigger too
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - run: pip install -r requirements.txt
+      
+      - name: Run AstroScanr
+        env:
+          ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
+        run: python3 astroscanr.py
+      
+      - name: Commit and push
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add -f astroscanr-*.png astroscanr-stats.csv
+          git commit -m "Auto-update: monthly AstroScanr analysis" || exit 0
+          git push
