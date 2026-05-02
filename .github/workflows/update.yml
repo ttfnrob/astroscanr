@@ -1,12 +1,56 @@
-name: Monthly AstroScanr Update
+name: Weekly AstroScanr Batch Update + Monthly Extended Analysis
 
 on:
   schedule:
-    - cron: '0 0 1 * *'  # 1st of each month, midnight UTC
-  workflow_dispatch:  # Manual trigger too
+    - cron: '0 0 * * 0'     # Every Sunday at 00:00 UTC (batch rotation)
+    - cron: '0 2 1 * *'     # 1st of month at 02:00 UTC (extended analysis)
+  workflow_dispatch:        # Manual trigger with inputs
 
 jobs:
-  update:
+  batch-update:
+    if: github.event.schedule == '0 0 * * 0' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        batch:
+          - journals: "MNRAS ApJ A&A"
+            week: 1
+          - journals: "AJ PASP NatAs"
+            week: 2
+          - journals: "ApJL PASA MNRASLetters"
+            week: 3
+          - journals: "AN Icarus SolPh OJA"
+            week: 4
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - run: pip install -r requirements.txt
+      
+      - name: Run batch ${{ matrix.batch.week }}
+        env:
+          ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
+        run: |
+          python3 astroscanr.py ${{ matrix.batch.journals }}
+      
+      - name: Move plots to docs folder
+        run: |
+          mv astroscanr-*.png docs/ 2>/dev/null || true
+          mv astroscanr-stats.csv docs/ 2>/dev/null || true
+      
+      - name: Commit batch results
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
+          git commit -m "Auto-update: batch ${{ matrix.batch.week }} (${{ matrix.batch.journals }})" || exit 0
+          git push
+
+  extended-analysis:
+    if: github.event.schedule == '0 2 1 * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,22 +61,21 @@ jobs:
       
       - run: pip install -r requirements.txt
       
-      - name: Run AstroScanr
+      - name: Run extended analysis
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
         run: |
-          python3 astroscanr.py
           python3 astroscanr-extended.py
       
       - name: Move plots to docs folder
         run: |
-          mv astroscanr-*.png docs/
-          mv astroscanr-stats.csv docs/
+          mv astroscanr-*.png docs/ 2>/dev/null || true
+          mv astroscanr-stats.csv docs/ 2>/dev/null || true
       
-      - name: Commit and push
+      - name: Commit extended results
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
-          git commit -m "Auto-update: monthly AstroScanr analysis" || exit 0
+          git commit -m "Auto-update: extended analysis (fields, citations, affiliations, seniority)" || exit 0
           git push

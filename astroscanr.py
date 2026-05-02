@@ -84,11 +84,17 @@ def fetch_papers_by_year(journal, year, rows=200, start=0, max_retries=3):
     
     return [], 0
 
-def build_dataset(journals=JOURNALS, years=YEARS):
+def build_dataset(journals=None, years=YEARS):
     """
     Fetch authorship data from ADS for selected journals and years.
     Returns a dict keyed by year with aggregated stats.
+    
+    If journals is None, uses all JOURNALS.
+    Supports partial/incremental fetching (call multiple times with different journal subsets).
     """
+    if journals is None:
+        journals = JOURNALS
+    
     dataset = defaultdict(lambda: {
         "papers": [],
         "author_counts": [],
@@ -343,6 +349,27 @@ def plot_people_vs_papers_ratio(stats, output_dir="."):
     plt.savefig(f"{output_dir}/06-ratio.png", dpi=150, bbox_inches="tight")
     print("✓ Saved: 06-ratio.png")
 
+def load_or_merge_dataset(csv_file="astroscanr-stats.csv"):
+    """
+    Load existing CSV and convert back to dataset dict.
+    Used for incremental updates.
+    """
+    dataset = defaultdict(lambda: {
+        "papers": [],
+        "author_counts": [],
+        "author_names": set(),
+        "total_citations": 0,
+    })
+    
+    if os.path.exists(csv_file):
+        df = pd.read_csv(csv_file)
+        for _, row in df.iterrows():
+            year = int(row['year'])
+            dataset[year]["author_counts"] = [1] * int(row['num_papers'])  # Placeholder counts
+            dataset[year]["author_names"] = set(range(int(row['num_unique_authors'])))
+    
+    return dataset
+
 def main():
     print("=" * 70)
     print("AstroScanr: Authorship Patterns in Astronomical Literature")
@@ -358,8 +385,15 @@ def main():
         print("  python3 astroscanr.py")
         sys.exit(1)
     
+    # Parse command-line arguments for batching
+    batch_journals = None
+    if len(sys.argv) > 1:
+        # E.g., python3 astroscanr.py MNRAS ApJ A&A
+        batch_journals = sys.argv[1:]
+        print(f"Batch mode: fetching {len(batch_journals)} journal(s): {', '.join(batch_journals)}")
+    
     # Fetch data
-    dataset = build_dataset()
+    dataset = build_dataset(journals=batch_journals)
     
     # Analyze
     print("\nAnalyzing...", end=" ", flush=True)
