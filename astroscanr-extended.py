@@ -19,7 +19,7 @@ from datetime import datetime
 ADS_API_URL = "https://api.adsabs.harvard.edu/v1/search/query"
 ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 
-JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP"]
+JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA"]
 YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2026, 2))
 
 def fetch_papers_by_year_extended(journal, year, rows=200, start=0, max_retries=3):
@@ -81,7 +81,8 @@ def build_dataset_extended():
     })
     
     total_years = len(YEARS)
-    print(f"Fetching extended data: {len(JOURNALS)} journals, {total_years} years...\n")
+    print(f"Fetching extended data: {len(JOURNALS)} journals, {total_years} years...")
+    print(f"Journals: {', '.join(JOURNALS)}\n")
     
     import time
     last_request_time = 0

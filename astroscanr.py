@@ -24,8 +24,8 @@ import os
 ADS_API_URL = "https://api.adsabs.harvard.edu/v1/search/query"
 ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 
-# Main astronomy journals from the original analysis
-JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP"]
+# Main astronomy journals from the original analysis, plus newer additions
+JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA"]
 
 # Sample years for faster processing: every 5 years before 1950, every 2 years after
 YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2026, 2))
@@ -98,6 +98,7 @@ def build_dataset(journals=JOURNALS, years=YEARS):
     
     total_years = len(years)
     print(f"Fetching data from {len(journals)} journals across {total_years} sampled years...")
+    print(f"Journals: {', '.join(journals)}")
     print(f"(1827-1950: 5-year samples; 1950-2025: 2-year samples)\n")
     
     import time
@@ -386,6 +387,7 @@ def main():
     print(f"  {len(stats['year'])} years of data")
     print(f"  {int(sum(stats['num_papers'])):,} papers analysed")
     print(f"  {int(sum(stats['num_unique_authors'])):,} unique authors")
+    print(f"  {len(journals)} journals: {', '.join(journals)}")
     print(f"\nFiles:")
     print("  - astroscanr-stats.csv (raw data)")
     print("  - 01-avg-authors.png")
