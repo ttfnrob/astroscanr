@@ -418,9 +418,8 @@
         </header>
         
         <div class="intro-box">
-            <p>In 1827, astronomical papers were written by one person with a telescope and a lot of time. By 2024, the largest papers have thousands of authors working across continents and decades.</p>
-            <p>This is the story of <em>how</em> that happened. Tracked across 200 years, 153,000 papers, and 427,000 researchers.</p>
-            <p>Updated monthly. <strong>Open data.</strong> No paywalls.</p>
+            <p>Analysis of authorship patterns in astronomical literature from 1827 to 2024. Dataset: 153,330 papers across MNRAS, ApJ, A and A, AJ, and PASP. 427,735 unique authors.</p>
+            <p>Updated monthly via automated pipeline. Open source. Data freely available.</p>
             <div class="cta-block">
                 <a href="https://github.com/ttfnrob/astroscanr" class="btn btn-primary">GitHub</a>
                 <a href="astroscanr-stats.csv" download class="btn btn-secondary">CSV Data</a>
@@ -445,8 +444,8 @@
         
         <div class="charts">
             <div class="chart">
-                <h3 class="chart-title">Solo to Swarm</h3>
-                <p class="chart-desc">One researcher. 1827. Then 1960 happened. By 2024, the average paper has 12 authors. That is not a statistical artifact. That is how science changed.</p>
+                <h3 class="chart-title">Average Authors per Paper</h3>
+                <p class="chart-desc">Trend from 1827 to 2024.</p>
                 <div class="plotly-container" id="c1"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-01-avg-authors.png" download class="download-link">PNG</a>
@@ -454,8 +453,8 @@
             </div>
             
             <div class="chart">
-                <h3 class="chart-title">The Outliers</h3>
-                <p class="chart-desc">Max authors per paper on a log scale. In 2024, someone counted 1,782 people on a single paper. That is not a mistake. That is LIGO.</p>
+                <h3 class="chart-title">Average and Maximum Authors (Log Scale)</h3>
+                <p class="chart-desc">Maximum co-authors per paper on logarithmic scale.</p>
                 <div class="plotly-container" id="c2"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-02-avg-max-log.png" download class="download-link">PNG</a>
@@ -463,8 +462,8 @@
             </div>
             
             <div class="chart">
-                <h3 class="chart-title">Distribution Flip</h3>
-                <p class="chart-desc">Single-author papers were 100 percent of astronomy in 1827. Now they are 3.5 percent. The flip point was 1996. Papers with 5-plus authors took over.</p>
+                <h3 class="chart-title">Authorship Distribution</h3>
+                <p class="chart-desc">Percentage of papers by author count category.</p>
                 <div class="plotly-container" id="c3"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-03-distribution.png" download class="download-link">PNG</a>
@@ -472,8 +471,8 @@
             </div>
             
             <div class="chart">
-                <h3 class="chart-title">Citation Bias</h3>
-                <p class="chart-desc">Big papers get cited more. Weighted by actual citation counts, multi-author papers now account for the vast majority of scientific attention.</p>
+                <h3 class="chart-title">Citation-Weighted Distribution</h3>
+                <p class="chart-desc">Distribution weighted by citation count per paper.</p>
                 <div class="plotly-container" id="c4"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-04-citation-weighted.png" download class="download-link">PNG</a>
@@ -481,8 +480,8 @@
             </div>
             
             <div class="chart">
-                <h3 class="chart-title">Growing Fast</h3>
-                <p class="chart-desc">Papers per year (bottom) went up 10x. Authors (top) went up 30x. That means we need more people to make the same number of papers. Collaboration is now essential.</p>
+                <h3 class="chart-title">Research Population and Paper Output</h3>
+                <p class="chart-desc">Unique authors and papers published per year.</p>
                 <div class="plotly-container" id="c5"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-05-population-papers.png" download class="download-link">PNG</a>
@@ -490,8 +489,8 @@
             </div>
             
             <div class="chart">
-                <h3 class="chart-title">Intensity</h3>
-                <p class="chart-desc">Authors per paper over time. A direct measure of how much teamwork each paper requires. Flat for 150 years. Then vertical.</p>
+                <h3 class="chart-title">Authors per Paper Ratio</h3>
+                <p class="chart-desc">Unique authors per paper over time.</p>
                 <div class="plotly-container" id="c6"></div>
                 <div class="chart-footer">
                     <a href="astroscanr-06-ratio.png" download class="download-link">PNG</a>
@@ -500,25 +499,28 @@
         </div>
         
         <div class="findings">
-            <h2>The Evidence</h2>
+            <h2>Observations</h2>
             
-            <h3>What We Saw in 2012</h3>
+            <h3>1827 to 1960</h3>
             <ul>
-                <li>For 133 years (1827-1960), authorship stayed flat. One author. Every paper.</li>
-                <li>Then it accelerated. By 2012, it was already up to 3.5 authors per paper.</li>
-                <li>Single-author papers were down to 6 percent. They were nearly extinct.</li>
-                <li>The largest papers already had 770 authors (LIGO, 2011).</li>
-                <li>Big papers were getting cited more. Science was rewarding collaboration.</li>
+                <li>Authorship remained at approximately 1.0 authors per paper</li>
+                <li>Single-author papers comprised the vast majority of all publications</li>
             </ul>
             
-            <h3>What We See in 2024</h3>
+            <h3>1960 to 1996</h3>
             <ul>
-                <li><strong>Average:</strong> 12 authors per paper. That is 12x what it was in 1960.</li>
-                <li><strong>Single-author:</strong> 3.5 percent. Practically extinct. A footnote.</li>
-                <li><strong>The new normal:</strong> 5-plus author papers are 61.7 percent of all papers.</li>
-                <li><strong>Extreme papers:</strong> The largest now has 1,782 authors. Not a mistake.</li>
-                <li><strong>The turn:</strong> 1996 was when 5-plus author papers overtook single-author papers. That year changed how science works.</li>
-                <li><strong>The cost:</strong> We need more people than ever to make papers. Specialisation went up. Coordination went up. The barrier to entry went up.</li>
+                <li>Co-authorship began increasing from 1960 onward</li>
+                <li>By 1996, papers with 5-plus authors overtook single-author papers for the first time</li>
+            </ul>
+            
+            <h3>1996 to 2024</h3>
+            <ul>
+                <li>Average authors per paper: 12.0 (2024)</li>
+                <li>Single-author papers: 3.5 percent of total (2024)</li>
+                <li>Papers with 5-plus authors: 61.7 percent of total (2024)</li>
+                <li>Maximum co-authors on a single paper: 1,782 (2024)</li>
+                <li>Total unique authors across dataset: 427,735</li>
+                <li>Total papers across dataset: 153,330</li>
             </ul>
         </div>
         
