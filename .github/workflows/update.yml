@@ -24,10 +24,15 @@ jobs:
           python3 astroscanr.py
           python3 astroscanr-extended.py
       
+      - name: Move plots to docs folder
+        run: |
+          mv astroscanr-*.png docs/
+          mv astroscanr-stats.csv docs/
+      
       - name: Commit and push
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f astroscanr-*.png astroscanr-stats.csv
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
           git commit -m "Auto-update: monthly AstroScanr analysis" || exit 0
           git push
