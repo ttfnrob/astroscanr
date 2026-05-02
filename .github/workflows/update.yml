@@ -20,7 +20,9 @@ jobs:
       - name: Run AstroScanr
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
-        run: python3 astroscanr.py
+        run: |
+          python3 astroscanr.py
+          python3 astroscanr-extended.py
       
       - name: Commit and push
         run: |

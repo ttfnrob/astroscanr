@@ -43,15 +43,18 @@ pip install -r requirements.txt
 # Set your ADS API key
 export ADS_API_KEY="your-token-here"
 
-# Run the analysis
+# Run the base analysis
 python3 astroscanr.py
+
+# Run the extended analysis (field-specific, citation velocity, affiliations, seniority)
+python3 astroscanr-extended.py
 ```
 
 This generates:
-- `astroscanr-stats.csv` — Raw statistics by year
-- `*.png` — Six publication-ready plots
+- **Base analysis:** `astroscanr-stats.csv`, plots 01-06
+- **Extended analysis:** plots 07-10 (fields, citations, affiliations, seniority)
 
-**Estimated time:** 10–15 minutes (63 years × 5 journals × rate limiting)
+**Estimated time:** 15-20 minutes total (extended data fetches keywords, abstracts, and affiliations)
 
 ### API Rate Limiting
 

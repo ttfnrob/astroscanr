@@ -45,7 +45,7 @@ def fetch_papers_by_year(journal, year, rows=200, start=0, max_retries=3):
         "q": query,
         "rows": rows,
         "start": start,
-        "fl": "bibcode,author,year,citation_count",
+        "fl": "bibcode,author,year,citation_count,keyword,abstract,aff,pubdate",
     }
     
     headers = {
