@@ -606,24 +606,36 @@
     </div>
     
     <script>
-        // Dynamically set the latest year based on chart data
-        const allYears = [1827, 1900, 1950, 1960, 1980, 2000, 2024];
-        const latestYear = Math.max(...allYears);
-        const startYear = 1827;
-        const yearSpan = latestYear - startYear;
+        // Dynamically set the latest year based on actual chart data points
+        // Extract from the first chart's X data (uses all available years)
+        const chart1Data = document.querySelector('#c1');
         
-        // Update all year references in header and narrative
-        document.getElementById('latest-year').textContent = latestYear;
-        document.getElementById('intro-year').textContent = latestYear;
-        document.getElementById('end-year').textContent = latestYear;
-        document.getElementById('year-span').textContent = yearSpan + ' years';
-        
-        // Update year references in observations section
-        document.getElementById('obs-end-year').textContent = latestYear;
-        document.getElementById('avg-year').textContent = latestYear;
-        document.getElementById('single-year').textContent = latestYear;
-        document.getElementById('multi-year').textContent = latestYear;
-        document.getElementById('max-year').textContent = latestYear;
+        // Fetch the CSV to find the actual latest year in data
+        fetch('astroscanr-stats.csv')
+            .then(response => response.text())
+            .then(csv => {
+                const lines = csv.trim().split('\n');
+                if (lines.length > 1) {
+                    const lastLine = lines[lines.length - 1];
+                    const lastYear = parseInt(lastLine.split(',')[0]);
+                    const startYear = 1827;
+                    const yearSpan = lastYear - startYear;
+                    
+                    // Update all year references
+                    document.getElementById('latest-year').textContent = lastYear;
+                    document.getElementById('intro-year').textContent = lastYear;
+                    document.getElementById('end-year').textContent = lastYear;
+                    document.getElementById('year-span').textContent = yearSpan + ' years';
+                    
+                    // Update year references in observations section
+                    document.getElementById('obs-end-year').textContent = lastYear;
+                    document.getElementById('avg-year').textContent = lastYear;
+                    document.getElementById('single-year').textContent = lastYear;
+                    document.getElementById('multi-year').textContent = lastYear;
+                    document.getElementById('max-year').textContent = lastYear;
+                }
+            })
+            .catch(err => console.log('Could not fetch CSV for year detection:', err));
         
         const config = {
             responsive: true,
