@@ -28,7 +28,7 @@ ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA", "MNRASLetters", "AN", "Icarus", "SolPh", "OJA"]
 
 # Sample years for faster processing: every 5 years before 1950, every 2 years after
-YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2026, 2))
+YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2027, 2))
 
 def fetch_papers_by_year(journal, year, rows=200, start=0, max_retries=3):
     """
