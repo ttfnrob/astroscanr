@@ -1,5 +1,6 @@
-*.png
-*.csv
+# Ignore generated files in root, but allow them in docs (for GitHub Pages)
+/*.png
+/*.csv
 __pycache__/
 *.py[cod]
 *$py.class
