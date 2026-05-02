@@ -701,16 +701,31 @@
             yaxis: { ...layout.yaxis, range: [0, 105] }
         }, config);
         
-        // Chart 5
-        Plotly.newPlot('c5', [{
-            x: [1827, 1900, 1950, 1960, 1980, 2000, 2024],
-            y: [100, 2000, 15000, 25000, 100000, 300000, 427000],
-            type: 'scatter',
-            mode: 'lines+markers',
-            fill: 'tozeroy',
-            line: { color: '#3b82f6', width: 3 },
-            marker: { size: 7 },
-        }], layout, config);
+        // Chart 5 - two series with dual Y-axes
+        Plotly.newPlot('c5', [
+            {
+                x: [1827, 1900, 1950, 1960, 1980, 2000, 2024],
+                y: [100, 2000, 15000, 25000, 100000, 300000, 427000],
+                name: 'Unique Authors',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#3b82f6', width: 3 },
+                yaxis: 'y1'
+            },
+            {
+                x: [1827, 1900, 1950, 1960, 1980, 2000, 2024],
+                y: [24, 250, 300, 681, 2500, 5000, 12000],
+                name: 'Papers per Year',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#ec4899', width: 3 },
+                yaxis: 'y2'
+            }
+        ], {
+            ...layout,
+            yaxis: { ...layout.yaxis, title: 'Unique Authors' },
+            yaxis2: { ...layout.yaxis, title: 'Papers per Year', overlaying: 'y', side: 'right' }
+        }, config);
         
         // Chart 6
         Plotly.newPlot('c6', [{
