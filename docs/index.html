@@ -492,7 +492,7 @@
         <div class="intro-box">
             <p>Analysis of authorship patterns in astronomical literature from 1827 to <span id="intro-year">2024</span> across thirteen peer-reviewed journals:</p>
             <p style="font-size: 0.95em; color: #cbd5e1; margin: 15px 0;"><strong>Core journals:</strong> MNRAS, ApJ, A&A, AJ, PASP. <strong>Modern additions:</strong> Nature Astronomy, ApJ Letters, PASA. <strong>Letters/short-form:</strong> MNRAS Letters. <strong>Specialized:</strong> Astronomische Nachrichten, Icarus, Solar Physics. <strong>Open access:</strong> The Open Journal of Astrophysics.</p>
-            <p>427,735+ unique authors. Updated monthly via automated pipeline. Open source. Data freely available.</p>
+            <p>465,787 unique authors, 172,940 papers. Updated monthly via automated pipeline. Open source. Data freely available.</p>
             <div class="cta-block">
                 <a href="https://github.com/ttfnrob/astroscanr" class="btn btn-primary">GitHub</a>
                 <a href="astroscanr-stats.csv" download class="btn btn-secondary">CSV Data</a>
@@ -586,14 +586,14 @@
                 <li>By 1996, papers with 5-plus authors overtook single-author papers for the first time</li>
             </ul>
             
-            <h3>1996 to 2024</h3>
+            <h3>1996 to <span id="obs-end-year">2024</span></h3>
             <ul>
-                <li>Average authors per paper: 12.0 (2024)</li>
-                <li>Single-author papers: 3.5 percent of total (2024)</li>
-                <li>Papers with 5-plus authors: 61.7 percent of total (2024)</li>
-                <li>Maximum co-authors on a single paper: 1,782 (2024)</li>
-                <li>Total unique authors across dataset: 427,735</li>
-                <li>Total papers across dataset: 153,330</li>
+                <li>Average authors per paper: 12.0 (<span id="avg-year">2024</span>)</li>
+                <li>Single-author papers: 3.5 percent of total (<span id="single-year">2024</span>)</li>
+                <li>Papers with 5-plus authors: 61.7 percent of total (<span id="multi-year">2024</span>)</li>
+                <li>Maximum co-authors on a single paper: 1,782 (<span id="max-year">2024</span>)</li>
+                <li>Total unique authors across dataset: 465,787</li>
+                <li>Total papers across dataset: 172,940</li>
             </ul>
         </div>
         
@@ -612,11 +612,18 @@
         const startYear = 1827;
         const yearSpan = latestYear - startYear;
         
-        // Update all year references
+        // Update all year references in header and narrative
         document.getElementById('latest-year').textContent = latestYear;
         document.getElementById('intro-year').textContent = latestYear;
         document.getElementById('end-year').textContent = latestYear;
         document.getElementById('year-span').textContent = yearSpan + ' years';
+        
+        // Update year references in observations section
+        document.getElementById('obs-end-year').textContent = latestYear;
+        document.getElementById('avg-year').textContent = latestYear;
+        document.getElementById('single-year').textContent = latestYear;
+        document.getElementById('multi-year').textContent = latestYear;
+        document.getElementById('max-year').textContent = latestYear;
         
         const config = {
             responsive: true,
