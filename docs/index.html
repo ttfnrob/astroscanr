@@ -732,7 +732,7 @@
             yaxis: { ...layout.yaxis, range: [0, 105] }
         }, config);
         
-        // Chart 5 - two series with dual Y-axes
+        // Chart 5 - two series with dual Y-axes (log scale)
         Plotly.newPlot('c5', [
             {
                 x: [1827, 1900, 1950, 1960, 1980, 2000, 2024],
@@ -754,8 +754,8 @@
             }
         ], {
             ...layout,
-            yaxis: { ...layout.yaxis, title: 'Unique Authors' },
-            yaxis2: { ...layout.yaxis, title: 'Papers per Year', overlaying: 'y', side: 'right' }
+            yaxis: { ...layout.yaxis, title: 'Unique Authors (log scale)', type: 'log' },
+            yaxis2: { ...layout.yaxis, title: 'Papers per Year (log scale)', overlaying: 'y', side: 'right', type: 'log' }
         }, config);
         
         // Chart 6

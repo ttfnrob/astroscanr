@@ -103,7 +103,7 @@ def build_dataset(journals=JOURNALS, years=YEARS):
     
     import time
     last_request_time = 0
-    MIN_REQUEST_INTERVAL = 0.5  # seconds between API calls
+    MIN_REQUEST_INTERVAL = 1.0  # seconds between API calls (ADS rate limit)
     
     for i, year in enumerate(years):
         print(f"[{i+1:2d}/{total_years}] Year {year}...", end=" ", flush=True)
@@ -304,23 +304,23 @@ def plot_citation_weighted_distribution(stats, output_dir="."):
     print("✓ Saved: 04-citation-weighted.png")
 
 def plot_population_and_papers(stats, output_dir="."):
-    """Plot 5 & 6: Research population and number of papers."""
+    """Plot 5 & 6: Research population and number of papers (log scale)."""
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
     
-    # Population
-    ax1.plot(stats["year"], stats["num_unique_authors"], linewidth=2.5, color="steelblue")
+    # Population (log scale)
+    ax1.semilogy(stats["year"], stats["num_unique_authors"], linewidth=2.5, color="steelblue")
     ax1.axvline(x=1960, color="gray", linestyle="--", alpha=0.5)
-    ax1.set_ylabel("Unique Authors (de-duplicated names)", fontsize=12)
+    ax1.set_ylabel("Unique Authors (log scale)", fontsize=12)
     ax1.set_title("Research Population in Astronomy (1827–2025)", fontsize=14, fontweight="bold")
-    ax1.grid(True, alpha=0.3)
+    ax1.grid(True, alpha=0.3, which="both")
     
-    # Papers per year
-    ax2.plot(stats["year"], stats["num_papers"], linewidth=2.5, color="coral")
+    # Papers per year (log scale)
+    ax2.semilogy(stats["year"], stats["num_papers"], linewidth=2.5, color="coral")
     ax2.axvline(x=1960, color="gray", linestyle="--", alpha=0.5)
     ax2.set_xlabel("Year", fontsize=12)
-    ax2.set_ylabel("Number of Papers", fontsize=12)
+    ax2.set_ylabel("Number of Papers (log scale)", fontsize=12)
     ax2.set_title("Papers Published per Year (1827–2025)", fontsize=14, fontweight="bold")
-    ax2.grid(True, alpha=0.3)
+    ax2.grid(True, alpha=0.3, which="both")
     
     plt.tight_layout()
     plt.savefig(f"{output_dir}/05-population-papers.png", dpi=150, bbox_inches="tight")
