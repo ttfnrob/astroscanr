@@ -6,7 +6,7 @@ A data mining analysis of authorship trends across 200 years of astronomical lit
 
 ## Overview
 
-This project resurrects and extends the 2012 analysis by Rob Simpson, examining how authorship has evolved in astronomy from single-author papers in the 19th century to large collaborations in the modern era (LIGO, JWST, LSST, EHT).
+This project resurrects and extends my 2012 analysis, examining how authorship has evolved in astronomy from single-author papers in the 19th century to large collaborations in the modern era (LIGO, JWST, LSST, EHT).
 
 ### Key Questions
 
@@ -69,7 +69,37 @@ This generates:
 
 ## Findings (2025 Update)
 
-_[To be populated after fresh data run]_
+Data analysed: **153,330 papers** across **427,735 unique authors** (1827–2024)
+
+### By the Numbers
+
+**1827:** Single-author era
+- Average: 1.00 authors per paper
+- Single-author papers: 100.0%
+- 5+ author papers: 0.0%
+
+**1960:** The inflection point
+- Average: 1.46 authors per paper  
+- Single-author papers: 67.3%
+- 5+ author papers: 0.4%
+
+**2024:** Modern astronomy
+- Average: **11.99 authors per paper** (12x the 1960 average)
+- Single-author papers: just 3.5% (down from 100% in 1827)
+- 5+ author papers: 61.7% (now the dominant category)
+- Largest paper: 1,782 co-authors
+
+### The Shift
+
+- **1960–1996:** Gradual rise in collaboration as instrumentation and computational needs grew
+- **1996:** Inflection point—papers with 5+ authors surpassed single-author papers for the first time
+- **1996–2024:** Explosive growth as large surveys (SDSS, LIGO, JWST), international collaborations, and big data analysis became standard
+
+### What Changed
+
+Astronomy went from individual researchers with telescopes to massive consortia. A modern LIGO gravitational wave paper lists hundreds of authors; JWST publications routinely involve dozens. The research population scaled faster than paper output—you need more people per paper than you did in the 1950s.
+
+This mirrors broader trends in science: specialisation, instrumentation complexity, and the rise of interdisciplinary teamwork all favour collaboration.
 
 ## License
 
@@ -79,7 +109,7 @@ MIT
 
 ```bibtex
 @misc{simpson2025astroscanr,
-  author = {Simpson, Rob},
+  author = {Simpson, Robert},
   title = {AstroScanr: Authorship Patterns in Astronomical Literature},
   year = {2025},
   url = {https://github.com/ttfnrob/astroscanr}
@@ -92,4 +122,4 @@ https://web.archive.org/web/20140505050827/http://orbitingfrog.com/2012/08/04/au
 
 ---
 
-_Part of Rob Simpson's personal research portfolio. Built with Python, ADS API, and matplotlib._
+_Part of my personal research portfolio. Built with Python, ADS API, and matplotlib._
