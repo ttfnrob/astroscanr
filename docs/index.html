@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroScanr: Authorship in Astronomy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .summary {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .summary p {
+            margin: 10px 0;
+        }
+        
+        .plots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .plot-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .plot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .plot-card img {
+            width: 100%;
+            display: block;
+        }
+        
+        .plot-description {
+            padding: 20px;
+        }
+        
+        .plot-description h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .plot-description p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .findings {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .findings h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .findings ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .findings li {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .findings li:last-child {
+            border-bottom: none;
+        }
+        
+        .findings li:before {
+            content: "▸ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .stats {
+            background: #f8f9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        .github-link {
+            background: white;
+            color: #667eea;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 20px;
+            transition: background 0.3s ease;
+        }
+        
+        .github-link:hover {
+            background: #f0f0f0;
+        }
+        
+        .placeholder {
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .plots {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AstroScanr</h1>
+            <p class="subtitle">Authorship Patterns in Astronomical Literature (1827-2025)</p>
+            
+            <div class="summary">
+                <p><strong>How has scientific collaboration changed in astronomy?</strong></p>
+                <p>This project analyses 200 years of astronomical papers from the NASA ADS API, tracking how authorship has evolved from single researchers in the 1800s to large collaborations of hundreds in the modern era.</p>
+                <p><em>Resurrection of my 2012 analysis: extended to 2025 with fresh data.</em></p>
+                <a href="https://github.com/ttfnrob/astroscanr" class="github-link">View on GitHub</a>
+            </div>
+        </header>
+        
+        <div class="plots">
+            <div class="plot-card">
+                <img src="astroscanr-01-avg-authors.png" alt="Average Authors per Paper">
+                <div class="plot-description">
+                    <h3>Average Authors per Paper</h3>
+                    <p>The 1960 inflection point marks the shift from solo research (about 1 author) to collaborative science. By 2024, averaging roughly 12 authors per paper. The steep curve mirrors the rise of Big Science.</p>
+                </div>
+            </div>
+            
+            <div class="plot-card">
+                <img src="astroscanr-02-avg-max-log.png" alt="Average and Maximum Authors Log Scale">
+                <div class="plot-description">
+                    <h3>Average and Maximum Authors (Log Scale)</h3>
+                    <p>Log scale reveals exponential growth. The maximum spikes to 1,782 authors. Record-breaking collaborations like LIGO dominate recent years, with the gap between average and max widening over time.</p>
+                </div>
+            </div>
+            
+            <div class="plot-card">
+                <img src="astroscanr-03-distribution.png" alt="Authorship Distribution">
+                <div class="plot-description">
+                    <h3>Authorship Distribution</h3>
+                    <p>From 1827 to 2024: single-author papers (blue) fade to nearly nothing, while 5-plus author papers (purple) dominate. The distribution flip happened around 1996.</p>
+                </div>
+            </div>
+            
+            <div class="plot-card">
+                <img src="astroscanr-04-citation-weighted.png" alt="Citation Weighted Distribution">
+                <div class="plot-description">
+                    <h3>Citation-Weighted Distribution</h3>
+                    <p>Same as above, weighted by citations. Multi-author papers get disproportionately more attention. Collaborative work, especially in the 5-plus category, is cited more heavily than solo efforts.</p>
+                </div>
+            </div>
+            
+            <div class="plot-card">
+                <img src="astroscanr-05-population-papers.png" alt="Population and Output">
+                <div class="plot-description">
+                    <h3>Research Population and Paper Output</h3>
+                    <p>Top: unique author count (427k over the dataset). Bottom: papers per year. From 1960 onward, authors grow faster than papers. This shows that collaboration requires more people per paper.</p>
+                </div>
+            </div>
+            
+            <div class="plot-card">
+                <img src="astroscanr-06-ratio.png" alt="Research Efficiency">
+                <div class="plot-description">
+                    <h3>Research Efficiency: Authors per Paper</h3>
+                    <p>The ratio of unique authors to papers measures teamwork intensity. Flat until 1960, then climbing steeply. Modern astronomy requires more people per paper than it did 70 years ago.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="findings">
+            <h2>Key Findings</h2>
+            
+            <h3 style="color: #764ba2; margin-top: 20px;">2012 Original Analysis</h3>
+            <ul>
+                <li><strong>1827-1960:</strong> Authorship remained flat at roughly 1 author per paper</li>
+                <li><strong>1960+:</strong> Sharp acceleration in co-authorship across all journals</li>
+                <li><strong>By 2012:</strong> Single-author papers just 6% of the total (down from roughly 100% in 1827)</li>
+                <li><strong>Largest paper:</strong> 770 co-authors (LIGO gravitational wave search, 2011)</li>
+                <li><strong>5-plus author papers:</strong> Became the dominant category by 2012</li>
+                <li><strong>Citation advantage:</strong> Multi-author papers are cited more frequently relative to their publication rate</li>
+            </ul>
+            
+            <h3 style="color: #764ba2; margin-top: 20px;">2025 Update</h3>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">63</div>
+                    <div class="stat-label">Sampled Years</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">~180k</div>
+                    <div class="stat-label">Papers Analysed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">~280k</div>
+                    <div class="stat-label">Unique Authors</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Major Journals</div>
+                </div>
+            </div>
+            <p style="margin-top: 20px;"><em>Fresh analysis complete. Run the script locally to see the 2012-2025 trends.</em></p>
+        </div>
+        
+        <footer>
+            <p>AstroScanr. Data from NASA ADS API. Journals: MNRAS, ApJ, A and A, AJ, PASP</p>
+            <p>A resurrection and extension of my 2012 analysis</p>
+        </footer>
+    </div>
+</body>
+</html>
