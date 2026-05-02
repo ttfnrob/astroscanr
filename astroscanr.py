@@ -30,10 +30,12 @@ JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP"]
 # Sample years for faster processing: every 5 years before 1950, every 2 years after
 YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2026, 2))
 
-def fetch_papers_by_year(journal, year, rows=200, start=0):
+def fetch_papers_by_year(journal, year, rows=200, start=0, max_retries=3):
     """
     Fetch papers from a journal in a given year using ADS API.
     Returns (papers, total_count).
+    
+    Respects rate limits with exponential backoff on 429 responses.
     """
     if not ADS_API_KEY:
         raise ValueError("ADS_API_KEY environment variable not set. Get a token from https://ui.adsabs.harvard.edu/user/settings/token")
@@ -50,14 +52,37 @@ def fetch_papers_by_year(journal, year, rows=200, start=0):
         "Authorization": f"Bearer {ADS_API_KEY}",
     }
     
-    try:
-        resp = requests.get(ADS_API_URL, params=params, headers=headers, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("response", {}).get("docs", []), data.get("response", {}).get("numFound", 0)
-    except Exception as e:
-        print(f"  ⚠ Error fetching {journal} {year}: {e}", file=sys.stderr)
-        return [], 0
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(ADS_API_URL, params=params, headers=headers, timeout=20)
+            
+            # Handle rate limiting
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get('Retry-After', 60 * (2 ** attempt)))
+                print(f"  ⏸ Rate limited. Waiting {retry_after}s...", file=sys.stderr, flush=True)
+                import time
+                time.sleep(retry_after)
+                continue
+            
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("response", {}).get("docs", []), data.get("response", {}).get("numFound", 0)
+        
+        except requests.exceptions.Timeout:
+            if attempt < max_retries - 1:
+                wait = 5 * (2 ** attempt)
+                print(f"  ⏸ Timeout. Waiting {wait}s before retry...", file=sys.stderr, flush=True)
+                import time
+                time.sleep(wait)
+            else:
+                print(f"  ✗ Timeout after {max_retries} attempts: {journal} {year}", file=sys.stderr)
+                return [], 0
+        
+        except Exception as e:
+            print(f"  ✗ Error fetching {journal} {year}: {e}", file=sys.stderr)
+            return [], 0
+    
+    return [], 0
 
 def build_dataset(journals=JOURNALS, years=YEARS):
     """
@@ -75,6 +100,10 @@ def build_dataset(journals=JOURNALS, years=YEARS):
     print(f"Fetching data from {len(journals)} journals across {total_years} sampled years...")
     print(f"(1827-1950: 5-year samples; 1950-2025: 2-year samples)\n")
     
+    import time
+    last_request_time = 0
+    MIN_REQUEST_INTERVAL = 0.5  # seconds between API calls
+    
     for i, year in enumerate(years):
         print(f"[{i+1:2d}/{total_years}] Year {year}...", end=" ", flush=True)
         year_papers = 0
@@ -86,7 +115,14 @@ def build_dataset(journals=JOURNALS, years=YEARS):
             start = 0
             
             while True:
+                # Enforce minimum time between requests
+                elapsed = time.time() - last_request_time
+                if elapsed < MIN_REQUEST_INTERVAL:
+                    time.sleep(MIN_REQUEST_INTERVAL - elapsed)
+                
                 papers, total = fetch_papers_by_year(journal, year, rows=200, start=start)
+                last_request_time = time.time()
+                
                 if not papers:
                     break
                 all_papers.extend(papers)

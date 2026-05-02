@@ -50,7 +50,18 @@ python3 astroscanr.py
 This generates:
 - `astroscanr-stats.csv` — Raw statistics by year
 - `*.png` — Six publication-ready plots
-- `ANALYSIS.md` — Detailed findings
+
+**Estimated time:** 10–15 minutes (63 years × 5 journals × rate limiting)
+
+### API Rate Limiting
+
+The script respects NASA ADS API limits:
+- **Minimum 0.5 seconds** between requests
+- **Exponential backoff** on 429 (rate limit) responses
+- **Automatic retry** on timeouts (max 3 attempts)
+- **Respects Retry-After headers** from the API
+
+If the API throttles you, the script will pause and resume automatically.
 
 ## Data Sources
 
