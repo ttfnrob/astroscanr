@@ -24,8 +24,8 @@ import os
 ADS_API_URL = "https://api.adsabs.harvard.edu/v1/search/query"
 ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 
-# Main astronomy journals from the original analysis, plus newer additions
-JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA"]
+# Astronomy journals: core historical + modern + specialized
+JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA", "MNRASLetters", "AN", "Icarus", "SolPh", "OJA"]
 
 # Sample years for faster processing: every 5 years before 1950, every 2 years after
 YEARS = list(range(1827, 1950, 5)) + list(range(1950, 2026, 2))
