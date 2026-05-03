@@ -20,6 +20,8 @@ Usage:
 
 import requests
 import json
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
@@ -36,10 +38,10 @@ ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 # Astronomy journals: core historical + modern + specialized
 JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA", "MNRASLetters", "AN", "Icarus", "SolPh", "OJA"]
 
-# Sample years for faster processing: every 5 years before 1950, every 2 years after
+# Fetch ALL years, not sampled — cache everything, analyze once
 # Updated dynamically based on current year
 CURRENT_YEAR = datetime.datetime.now().year
-YEARS = list(range(1827, 1950, 5)) + list(range(1950, CURRENT_YEAR + 1, 2))
+ALL_YEARS = list(range(1827, CURRENT_YEAR + 1))  # Every single year: 1827-2026 (200 years)
 
 # Cache and checkpoint files
 CACHE_FILE = "data/historical_papers.json"
@@ -85,7 +87,7 @@ def get_missing_journals_and_years(cache):
     missing = {}
     for journal in JOURNALS:
         missing[journal] = []
-        for year in YEARS:
+        for year in ALL_YEARS:
             year_str = str(year)
             if year_str not in cache or journal not in cache[year_str]:
                 missing[journal].append(year)
@@ -194,7 +196,7 @@ def fetch_incremental(journal, years_to_fetch, cache, request_count):
     
     return new_papers, request_count[0] >= RATE_LIMIT_THRESHOLD
 
-def build_dataset_from_cache(cache, current_year_only=False):
+def build_dataset_from_cache(cache, current_year_only=False, use_all_journals=True):
     """Build analysis dataset from cached papers."""
     dataset = defaultdict(lambda: {
         "papers": [],
