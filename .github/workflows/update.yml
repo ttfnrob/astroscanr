@@ -39,6 +39,63 @@ jobs:
           git commit -m "Auto: daily incremental build ($(date +%Y-%m-%d))" || exit 0
           git push
 
+  daily-analysis:
+    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - run: pip install -r requirements.txt
+      
+      - name: Daily analysis from cached data
+        run: |
+          # The daily fetch created/updated data. Now regenerate all plots and stats.
+          # This is fast since data is cached.
+          python3 << 'PYEOF'
+          import json
+          from astroscanr import build_dataset_from_cache, analyze_dataset
+          from astroscanr import plot_average_authors, plot_avg_and_max_authors_log
+          from astroscanr import plot_author_distribution, plot_citation_weighted_distribution
+          from astroscanr import plot_population_and_papers, plot_people_vs_papers_ratio
+          import pandas as pd
+          import os
+          
+          os.makedirs("docs", exist_ok=True)
+          
+          # Load cached data and regenerate analysis
+          cache = json.load(open("data/historical_papers.json"))
+          dataset = build_dataset_from_cache(cache, current_year_only=False)
+          
+          if dataset:
+              stats = analyze_dataset(dataset)
+              
+              # Generate all plots
+              plot_average_authors(stats, "docs")
+              plot_avg_and_max_authors_log(stats, "docs")
+              plot_author_distribution(stats, "docs")
+              plot_citation_weighted_distribution(stats, "docs")
+              plot_population_and_papers(stats, "docs")
+              plot_people_vs_papers_ratio(stats, "docs")
+              
+              # Save stats
+              df = pd.DataFrame(stats)
+              df.to_csv("docs/astroscanr-stats.csv", index=False)
+              
+              print(f"✅ Analysis complete: {len(stats['year'])} years")
+          PYEOF
+      
+      - name: Commit results
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
+          git commit -m "Auto: daily analysis refresh ($(date +%Y-%m-%d))" || exit 0
+          git push
+
   monthly-extended:
     if: github.event.schedule == '0 2 1 * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -57,22 +114,15 @@ jobs:
         run: |
           python3 astroscanr-extended.py
       
-      - name: Also run current year update (since cache is built)
-        env:
-          ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
-        run: |
-          python3 astroscanr.py --current-year-only
-      
       - name: Prepare artifacts
         run: |
           mkdir -p docs
           mv astroscanr-*.png docs/ 2>/dev/null || true
-          mv astroscanr-stats.csv docs/ 2>/dev/null || true
       
       - name: Commit results
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
-          git commit -m "Auto: monthly extended analysis + current year refresh ($(date +%Y-%m-%d))" || exit 0
+          git add -f docs/astroscanr-*.png
+          git commit -m "Auto: monthly extended analysis ($(date +%Y-%m-%d))" || exit 0
           git push
