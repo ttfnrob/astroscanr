@@ -456,12 +456,13 @@ def main():
             next_idx = 0
             years_done = []
         
-        # Fetch up to 3 journals today (safe with 5000 request/day limit)
-        # Daily budget: 5000 requests, each journal ~250 requests, so 3 = ~750 requests (15% of limit)
+        # Fetch up to 2 journals today (ADS is rate-limiting more aggressively than expected)
+        # Tested: 3 journals hit rate limit even though requests seem under 5000
+        # Going back to 2 journals/day which was working reliably
         missing = get_missing_journals_and_years(cache)
         journals_to_fetch = []
         hit_limit = False
-        JOURNALS_PER_RUN = 3  # Conservative: 3 journals/day ~= 750 requests, finishes cache in ~4 days
+        JOURNALS_PER_RUN = 2  # Safe: 2 journals/day, completes in ~7 days
         
         for i in range(JOURNALS_PER_RUN):  # Try to fetch 2 journals
             current_idx = (next_idx + i) % len(JOURNALS)
