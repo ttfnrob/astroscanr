@@ -22,7 +22,9 @@ import requests
 import json
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.rcParams['figure.max_open_warning'] = 0  # Suppress warnings
 import matplotlib.pyplot as plt
+plt.ioff()  # Turn off interactive mode
 import numpy as np
 from collections import defaultdict
 import pandas as pd
@@ -309,6 +311,8 @@ def plot_average_authors(stats, output_dir="."):
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/01-avg-authors.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    plt.close(fig)
     print("✓ Saved: 01-avg-authors.png")
 
 def plot_avg_and_max_authors_log(stats, output_dir="."):
@@ -324,6 +328,7 @@ def plot_avg_and_max_authors_log(stats, output_dir="."):
     ax.grid(True, alpha=0.3, which="both")
     plt.tight_layout()
     plt.savefig(f"{output_dir}/02-avg-max-log.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print("✓ Saved: 02-avg-max-log.png")
 
 def plot_author_distribution(stats, output_dir="."):
@@ -342,6 +347,7 @@ def plot_author_distribution(stats, output_dir="."):
     ax.set_ylim([0, 100])
     plt.tight_layout()
     plt.savefig(f"{output_dir}/03-distribution.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print("✓ Saved: 03-distribution.png")
 
 def plot_citation_weighted_distribution(stats, output_dir="."):
@@ -356,6 +362,7 @@ def plot_citation_weighted_distribution(stats, output_dir="."):
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/04-citation-weighted.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print("✓ Saved: 04-citation-weighted.png")
 
 def plot_population_and_papers(stats, output_dir="."):
@@ -378,6 +385,7 @@ def plot_population_and_papers(stats, output_dir="."):
     
     fig.tight_layout()
     plt.savefig(f"{output_dir}/05-population-papers.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print("✓ Saved: 05-population-papers.png")
 
 def plot_people_vs_papers_ratio(stats, output_dir="."):
@@ -392,6 +400,7 @@ def plot_people_vs_papers_ratio(stats, output_dir="."):
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/06-ratio.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print("✓ Saved: 06-ratio.png")
 
 def main():
