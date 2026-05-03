@@ -145,6 +145,10 @@ def fetch_papers_by_year(journal, year, rows=200, start=0, max_retries=3):
             
             if resp.status_code == 429:
                 retry_after = int(resp.headers.get('Retry-After', 60 * (2 ** attempt)))
+                # Don't sleep longer than 5 minutes; instead skip this year/journal
+                if retry_after > 300:
+                    print(f"  ⏸ Rate limited (wait {retry_after}s). Skipping rest of this journal.", file=sys.stderr, flush=True)
+                    return [], 0  # Return empty to signal we should move to next journal
                 print(f"  ⏸ Rate limited. Waiting {retry_after}s...", file=sys.stderr, flush=True)
                 time.sleep(retry_after)
                 continue
@@ -452,12 +456,14 @@ def main():
             next_idx = 0
             years_done = []
         
-        # Fetch up to 5 journals today
+        # Fetch up to 2 journals today (conservative to avoid rate limits)
+        # 5 journals was too aggressive and hit 429 errors
         missing = get_missing_journals_and_years(cache)
         journals_to_fetch = []
         hit_limit = False
+        JOURNALS_PER_RUN = 2  # Reduced from 5 to stay well under 5000 requests/day
         
-        for i in range(5):  # Try to fetch 5 journals
+        for i in range(JOURNALS_PER_RUN):  # Try to fetch 2 journals
             current_idx = (next_idx + i) % len(JOURNALS)
             journal = JOURNALS[current_idx]
             
@@ -504,8 +510,8 @@ def main():
             print(f"\n⏹ Rate limit hit. Checkpoint saved.")
             print(f"   Tomorrow: start from journal #{next_run_idx} ({next_journal})")
         else:
-            # All 5 fetched, no limit hit — update for next batch
-            next_run_idx = (next_idx + 5) % len(JOURNALS)
+            # All journals fetched, no limit hit — update for next batch
+            next_run_idx = (next_idx + JOURNALS_PER_RUN) % len(JOURNALS)
             save_checkpoint({
                 "next_journal_idx": next_run_idx,
                 "completed_journals": years_done,
