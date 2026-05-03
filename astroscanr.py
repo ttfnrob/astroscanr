@@ -35,8 +35,11 @@ import time
 ADS_API_URL = "https://api.adsabs.harvard.edu/v1/search/query"
 ADS_API_KEY = os.environ.get("ADS_API_KEY", "")
 
-# Astronomy journals: core historical + modern + specialized
-JOURNALS = ["MNRAS", "ApJ", "A&A", "AJ", "PASP", "NatAs", "ApJL", "PASA", "MNRASLetters", "AN", "Icarus", "SolPh", "OJA"]
+# Astronomy journals: ordered by founding year (oldest first)
+# MNRAS (1831), AJ (1849), AN (1821)*, ApJ (1895), PASP (1889), Icarus (1962), 
+# A&A (1969), SolPh (1967), ApJL (1969), PASA (1983), MNRASLetters (1988), NatAs (2017), OJA (2018)
+# *AN founded earlier but less historical data
+JOURNALS = ["AN", "MNRAS", "AJ", "ApJ", "PASP", "Icarus", "SolPh", "A&A", "ApJL", "PASA", "MNRASLetters", "NatAs", "OJA"]
 
 # Fetch ALL years, not sampled — cache everything, analyze once
 # Updated dynamically based on current year
@@ -407,21 +410,37 @@ def main():
         dataset = build_dataset_from_cache(cache, current_year_only=True)
         print(f"Loaded {len(dataset)} year(s) for analysis")
     else:
-        # Incremental daily run
+        # Incremental daily run — fetch 5 journals per day
         if checkpoint:
-            journal = checkpoint.get("next_journal")
+            next_idx = checkpoint.get("next_journal_idx", 0)
             years_done = checkpoint.get("completed_journals", [])
-            print(f"▶ Resuming from: {journal} (completed: {', '.join(years_done)})\n")
+            print(f"▶ Resuming from journal #{next_idx}: {JOURNALS[next_idx]}\n")
         else:
-            journal = JOURNALS[0]
+            next_idx = 0
             years_done = []
         
-        # Fetch one journal
+        # Fetch up to 5 journals today
         missing = get_missing_journals_and_years(cache)
-        years_to_fetch = missing[journal]
+        journals_to_fetch = []
+        hit_limit = False
         
-        if years_to_fetch:
-            new_papers, hit_limit = fetch_incremental(journal, years_to_fetch, cache, request_count)
+        for i in range(5):  # Try to fetch 5 journals
+            current_idx = (next_idx + i) % len(JOURNALS)
+            journal = JOURNALS[current_idx]
+            
+            if request_count[0] >= RATE_LIMIT_THRESHOLD:
+                print(f"⏹ Rate limit reached after {len(journals_to_fetch)} journals")
+                hit_limit = True
+                break
+            
+            years_to_fetch = missing[journal]
+            
+            if not years_to_fetch:
+                print(f"✅ {journal} already fully cached, skipping")
+                continue
+            
+            print(f"\n📚 [{i+1}/5] Fetching {journal}...")
+            new_papers, limit_hit = fetch_incremental(journal, years_to_fetch, cache, request_count)
             
             # Merge into cache
             for year, papers in new_papers.items():
@@ -431,32 +450,38 @@ def main():
                 cache[year_str][journal] = papers
             
             save_cache(cache)
-            print(f"\n✅ Cached {len(new_papers)} years for {journal}")
-        else:
-            print(f"✅ {journal} fully cached already")
-            hit_limit = False
+            print(f"✅ {journal} done ({len(new_papers)} years, {request_count[0]}/5000 requests)")
+            journals_to_fetch.append(journal)
+            years_done.append(journal)
+            
+            if limit_hit:
+                hit_limit = True
+                break
         
-        # Update checkpoint
+        # Update checkpoint for next run
         if hit_limit or request_count[0] >= RATE_LIMIT_THRESHOLD:
-            # Next journal tomorrow
-            next_idx = (JOURNALS.index(journal) + 1) % len(JOURNALS)
+            next_run_idx = (next_idx + len(journals_to_fetch)) % len(JOURNALS)
             save_checkpoint({
-                "next_journal": JOURNALS[next_idx],
-                "completed_journals": years_done + [journal],
+                "next_journal_idx": next_run_idx,
+                "completed_journals": years_done,
                 "last_run": datetime.datetime.now().isoformat(),
                 "requests_used": request_count[0],
             })
-            print(f"⏹ Hit rate limit. Checkpoint saved. Resume tomorrow with {JOURNALS[next_idx]}")
+            next_journal = JOURNALS[next_run_idx]
+            print(f"\n⏹ Rate limit hit. Checkpoint saved.")
+            print(f"   Tomorrow: start from journal #{next_run_idx} ({next_journal})")
         else:
-            # Continue with next journal today
-            next_idx = (JOURNALS.index(journal) + 1) % len(JOURNALS)
+            # All 5 fetched, no limit hit — update for next batch
+            next_run_idx = (next_idx + 5) % len(JOURNALS)
             save_checkpoint({
-                "next_journal": JOURNALS[next_idx],
-                "completed_journals": years_done + [journal],
+                "next_journal_idx": next_run_idx,
+                "completed_journals": years_done,
                 "last_run": datetime.datetime.now().isoformat(),
                 "requests_used": request_count[0],
             })
-            print(f"✅ Journal {journal} done. Moving to {JOURNALS[next_idx]}...")
+            next_journal = JOURNALS[next_run_idx]
+            print(f"\n✅ {len(journals_to_fetch)} journals completed today")
+            print(f"   Tomorrow: continue with journal #{next_run_idx} ({next_journal})")
         
         # Build dataset from full cache for analysis
         dataset = build_dataset_from_cache(cache, current_year_only=False)
