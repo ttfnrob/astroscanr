@@ -34,7 +34,7 @@ jobs:
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
         run: |
-          python3 astroscanr.py "${{ matrix.batch.journals }}"
+          python3 astroscanr.py '${{ matrix.batch.journals }}'
       
       - name: Move plots to docs folder
         run: |
