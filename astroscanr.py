@@ -64,10 +64,25 @@ def load_cache(cache_file=CACHE_FILE):
     return {}
 
 def save_cache(cache, cache_file=CACHE_FILE):
-    """Save cache to disk."""
-    os.makedirs(os.path.dirname(cache_file) or ".", exist_ok=True)
-    with open(cache_file, 'w') as f:
-        json.dump(cache, f, indent=2)
+    """Save cache to disk with error handling."""
+    try:
+        os.makedirs(os.path.dirname(cache_file) or ".", exist_ok=True)
+        # Write to temp file first, then rename (atomic)
+        temp_file = cache_file + ".tmp"
+        with open(temp_file, 'w') as f:
+            json.dump(cache, f, indent=2)
+        # Atomic rename
+        os.replace(temp_file, cache_file)
+    except Exception as e:
+        print(f"⚠️ Error saving cache: {e}", file=sys.stderr, flush=True)
+        # Try to save to a backup location
+        try:
+            backup_file = cache_file + ".backup"
+            with open(backup_file, 'w') as f:
+                json.dump(cache, f, indent=2)
+            print(f"⚠️ Backup saved to {backup_file}", file=sys.stderr, flush=True)
+        except:
+            pass
 
 def load_checkpoint(checkpoint_file=CHECKPOINT_FILE):
     """Load fetch progress checkpoint."""
@@ -80,10 +95,19 @@ def load_checkpoint(checkpoint_file=CHECKPOINT_FILE):
     return None
 
 def save_checkpoint(checkpoint, checkpoint_file=CHECKPOINT_FILE):
-    """Save checkpoint to disk."""
-    os.makedirs(os.path.dirname(checkpoint_file) or ".", exist_ok=True)
-    with open(checkpoint_file, 'w') as f:
-        json.dump(checkpoint, f, indent=2)
+    """Save checkpoint to disk with error handling."""
+    try:
+        os.makedirs(os.path.dirname(checkpoint_file) or ".", exist_ok=True)
+        # Write to temp file first, then rename (atomic)
+        temp_file = checkpoint_file + ".tmp"
+        with open(temp_file, 'w') as f:
+            json.dump(checkpoint, f, indent=2)
+        # Atomic rename
+        os.replace(temp_file, checkpoint_file)
+        print(f"✅ Checkpoint saved: next journal #{checkpoint.get('next_journal_idx')}", flush=True)
+    except Exception as e:
+        print(f"⚠️ Error saving checkpoint: {e}", file=sys.stderr, flush=True)
+        # Don't fail the whole script, but log it
 
 def get_missing_journals_and_years(cache):
     """Determine which journals and years are missing from cache."""
@@ -486,24 +510,31 @@ def main():
         # Build dataset from full cache for analysis
         dataset = build_dataset_from_cache(cache, current_year_only=False)
     
-    # Analyze and plot
-    print("\nAnalyzing...", end=" ", flush=True)
-    stats = analyze_dataset(dataset)
-    print(f"Done ({len(stats['year'])} years)")
-    
-    print("\nGenerating plots...")
-    plot_average_authors(stats)
-    plot_avg_and_max_authors_log(stats)
-    plot_author_distribution(stats)
-    plot_citation_weighted_distribution(stats)
-    plot_population_and_papers(stats)
-    plot_people_vs_papers_ratio(stats)
-    
-    # Save stats
-    print("\nSaving stats...", end=" ", flush=True)
-    df = pd.DataFrame(stats)
-    df.to_csv("astroscanr-stats.csv", index=False)
-    print("Done")
+    # Analyze and plot with error handling
+    try:
+        print("\nAnalyzing...", end=" ", flush=True)
+        stats = analyze_dataset(dataset)
+        print(f"Done ({len(stats['year'])} years)", flush=True)
+        
+        print("\nGenerating plots...", flush=True)
+        plot_average_authors(stats)
+        plot_avg_and_max_authors_log(stats)
+        plot_author_distribution(stats)
+        plot_citation_weighted_distribution(stats)
+        plot_population_and_papers(stats)
+        plot_people_vs_papers_ratio(stats)
+        print("✅ All plots generated", flush=True)
+        
+        # Save stats
+        print("Saving stats...", end=" ", flush=True)
+        df = pd.DataFrame(stats)
+        df.to_csv("astroscanr-stats.csv", index=False)
+        print("Done", flush=True)
+    except Exception as e:
+        print(f"\n⚠️ Error during analysis/plotting: {e}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        print("⚠️ Continuing despite analysis error (cache and checkpoint still saved)", file=sys.stderr, flush=True)
     
     print("\n" + "=" * 70)
     print("✓ Analysis complete!")
