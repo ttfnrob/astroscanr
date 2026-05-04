@@ -2,9 +2,9 @@ name: AstroScanr Daily Incremental + Monthly Analysis
 
 on:
   schedule:
-    - cron: '0 0 * * *'     # Every day at 00:00 UTC (daily incremental build)
-    - cron: '0 2 1 * *'     # 1st of month at 02:00 UTC (monthly extended analysis)
-  workflow_dispatch:        # Manual trigger
+    - cron: '0 0 * * *'
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,74 +28,49 @@ jobs:
         run: |
           python3 astroscanr.py
       
-      - name: Prepare artifacts
-        run: |
-          mkdir -p docs
-          mv astroscanr-*.png docs/ 2>/dev/null || true
-          mv astroscanr-stats.csv docs/ 2>/dev/null || true
-      
-      - name: Commit results
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/historical_papers.json data/fetch_checkpoint.json
-          git commit -m "Auto: daily incremental build ($(date +%Y-%m-%d))" || exit 0
-          git push
-
-  daily-analysis:
-    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
-    needs: daily-incremental
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - run: pip install -r requirements.txt
-      
       - name: Daily analysis from cached data
         run: |
           python3 << 'PYEOF'
-          import json
+          import json, os, sys
+          
+          cache_file = "data/historical_papers.json"
+          if not os.path.exists(cache_file):
+              print("No cache file yet, skipping analysis")
+              sys.exit(0)
+          
           from astroscanr import build_dataset_from_cache, analyze_dataset
           from astroscanr import plot_average_authors, plot_avg_and_max_authors_log
           from astroscanr import plot_author_distribution, plot_citation_weighted_distribution
           from astroscanr import plot_population_and_papers, plot_people_vs_papers_ratio
           import pandas as pd
-          import os
           
           os.makedirs("docs", exist_ok=True)
           
-          # Load cached data and regenerate analysis
-          cache = json.load(open("data/historical_papers.json"))
+          cache = json.load(open(cache_file))
           dataset = build_dataset_from_cache(cache, current_year_only=False)
           
           if dataset:
               stats = analyze_dataset(dataset)
-              
-              # Generate all plots
               plot_average_authors(stats, "docs")
               plot_avg_and_max_authors_log(stats, "docs")
               plot_author_distribution(stats, "docs")
               plot_citation_weighted_distribution(stats, "docs")
               plot_population_and_papers(stats, "docs")
               plot_people_vs_papers_ratio(stats, "docs")
-              
-              # Save stats
               df = pd.DataFrame(stats)
               df.to_csv("docs/astroscanr-stats.csv", index=False)
-              
               print(f"Analysis complete: {len(stats['year'])} years")
           PYEOF
       
-      - name: Commit results
+      - name: Prepare and commit results
         run: |
+          mkdir -p docs
+          mv astroscanr-*.png docs/ 2>/dev/null || true
+          mv astroscanr-stats.csv docs/ 2>/dev/null || true
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv
-          git commit -m "Auto: daily analysis refresh ($(date +%Y-%m-%d))" || exit 0
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/historical_papers.json data/fetch_checkpoint.json
+          git commit -m "Auto: daily build + analysis ($(date +%Y-%m-%d))" || exit 0
           git push
 
   monthly-extended:
@@ -116,13 +91,10 @@ jobs:
         run: |
           python3 astroscanr-extended.py
       
-      - name: Prepare artifacts
+      - name: Prepare and commit results
         run: |
           mkdir -p docs
           mv astroscanr-*.png docs/ 2>/dev/null || true
-      
-      - name: Commit results
-        run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add -f docs/astroscanr-*.png
