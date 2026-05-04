@@ -1,0 +1,9 @@
+{
+  "next_journal_idx": 2,
+  "completed_journals": [
+    "AN",
+    "MNRAS"
+  ],
+  "last_run": "2026-05-04T03:16:14.047789",
+  "requests_used": 921
+}
