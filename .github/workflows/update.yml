@@ -6,6 +6,9 @@ on:
     - cron: '0 2 1 * *'     # 1st of month at 02:00 UTC (monthly extended analysis)
   workflow_dispatch:        # Manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   daily-incremental:
     if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
@@ -35,12 +38,13 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/historical_papers.json
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/historical_papers.json data/fetch_checkpoint.json
           git commit -m "Auto: daily incremental build ($(date +%Y-%m-%d))" || exit 0
           git push
 
   daily-analysis:
     if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    needs: daily-incremental
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,8 +57,6 @@ jobs:
       
       - name: Daily analysis from cached data
         run: |
-          # The daily fetch created/updated data. Now regenerate all plots and stats.
-          # This is fast since data is cached.
           python3 << 'PYEOF'
           import json
           from astroscanr import build_dataset_from_cache, analyze_dataset
@@ -85,7 +87,7 @@ jobs:
               df = pd.DataFrame(stats)
               df.to_csv("docs/astroscanr-stats.csv", index=False)
               
-              print(f"✅ Analysis complete: {len(stats['year'])} years")
+              print(f"Analysis complete: {len(stats['year'])} years")
           PYEOF
       
       - name: Commit results
