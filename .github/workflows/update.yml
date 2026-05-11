@@ -21,12 +21,26 @@ jobs:
           python-version: '3.11'
       
       - run: pip install -r requirements.txt
+
+      - name: Restore papers cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/historical_papers.json
+          key: historical-papers-${{ github.run_id }}
+          restore-keys: |
+            historical-papers-
       
       - name: Daily incremental build (resumes from checkpoint)
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
         run: |
           python3 astroscanr.py
+
+      - name: Save papers cache
+        uses: actions/cache/save@v4
+        with:
+          path: data/historical_papers.json
+          key: historical-papers-${{ github.run_id }}
       
       - name: Daily analysis from cached data
         run: |
@@ -69,7 +83,7 @@ jobs:
           mv astroscanr-stats.csv docs/ 2>/dev/null || true
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/historical_papers.json data/fetch_checkpoint.json
+          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/fetch_checkpoint.json
           git commit -m "Auto: daily build + analysis ($(date +%Y-%m-%d))" || exit 0
           git push
 
@@ -84,7 +98,15 @@ jobs:
           python-version: '3.11'
       
       - run: pip install -r requirements.txt
-      
+
+      - name: Restore papers cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/historical_papers.json
+          key: historical-papers-${{ github.run_id }}
+          restore-keys: |
+            historical-papers-
+
       - name: Monthly extended analysis (plots 7-10)
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
