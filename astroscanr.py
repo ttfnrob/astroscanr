@@ -476,10 +476,12 @@ def main():
             years_to_fetch = missing[journal]
             
             if not years_to_fetch:
-                print(f"✅ {journal} already fully cached, skipping")
-                continue
+                # No missing years — but always refresh the current year
+                # This keeps data fresh once the historical cache is complete
+                print(f"🔄 {journal} fully cached — refreshing current year ({CURRENT_YEAR})")
+                years_to_fetch = [CURRENT_YEAR]
             
-            print(f"\n📚 [{i+1}/5] Fetching {journal}...")
+            print(f"\n📚 [{i+1}/{JOURNALS_PER_RUN}] Fetching {journal} ({len(years_to_fetch)} years)...")
             new_papers, limit_hit = fetch_incremental(journal, years_to_fetch, cache, request_count)
             
             # Merge into cache
