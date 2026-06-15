@@ -1,5 +1,5 @@
 {
-  "next_journal_idx": 8,
+  "next_journal_idx": 10,
   "completed_journals": [
     "AN",
     "MNRAS",
@@ -84,8 +84,10 @@
     "PASP",
     "Icarus",
     "SolPh",
-    "A&A"
+    "A&A",
+    "ApJL",
+    "PASA"
   ],
-  "last_run": "2026-06-14T00:32:52.632933",
-  "requests_used": 342
+  "last_run": "2026-06-15T00:33:07.788178",
+  "requests_used": 279
 }
