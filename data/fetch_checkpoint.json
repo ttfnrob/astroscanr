@@ -1,5 +1,5 @@
 {
-  "next_journal_idx": 0,
+  "next_journal_idx": 2,
   "completed_journals": [
     "AN",
     "MNRAS",
@@ -102,8 +102,10 @@
     "PASA",
     "MNRASLetters",
     "NatAs",
-    "OJA"
+    "OJA",
+    "AN",
+    "MNRAS"
   ],
-  "last_run": "2026-06-23T00:33:17.564347",
-  "requests_used": 375
+  "last_run": "2026-06-24T00:20:27.049268",
+  "requests_used": 10
 }
