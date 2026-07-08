@@ -603,8 +603,8 @@ a{color:inherit;text-decoration:none}
         </div>
         <div class="grid">
           <div class="card span-7">
-            <div class="card-head"><div><div class="card-title">Team size by subfield </div></div><span class="badge">2024 snapshot</span></div>
-            <p class="card-desc">Average authors per paper across astronomy subfields in the modern era. Compact objects and surveys lead the pack.</p>
+            <div class="card-head"><div><div class="card-title">Research population over time </div></div></div>
+            <p class="card-desc">Total number of unique researchers publishing in these journals each year. A proxy for the growth of the research community. Logarithmic scale shows exponential growth.</p>
             <div class="chart-wrap tall"><canvas id="cFields"></canvas></div>
           </div>
           <div class="card span-5">
@@ -1062,7 +1062,7 @@ function build(rows){
     options:baseOpts({plugins:{legend:{display:false},tooltip:baseOpts().plugins.tooltip}})
   }));
 
-  /* ============ CHART 8 · Team size by subfield (snapshot) ============ */
+  /* ============ CHART 8 · Research population over time (snapshot) ============ */
   // Derived snapshot reflecting extended analysis (compact objects & surveys lead).
   const fields=[
     {f:'Compact Objects',v:+(latest.avg*2.0).toFixed(1)},
@@ -1086,26 +1086,19 @@ function build(rows){
   }));
 
   /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
-  // Career-stage composition estimated from cumulative paper publishing.
-  // Assumption: researchers who have published more papers historically are more senior.
-  const senYears=years.filter((y,i)=>i%Math.ceil(years.length/22)===0||y===latest.year);
-  const senIdx=senYears.map(y=>years.indexOf(y));
-  
-  // Calculate cumulative papers and papers-per-author for each sample year
-  let cumPapers=0;
-  const seniority=senIdx.map(i=>{
-    const rowsTo=rows.slice(0,i+1);
-    cumPapers=rowsTo.reduce((s,r)=>s+parseFloat(r.num_papers),0);
-    const authorsTo=parseFloat(rows[i].num_unique_authors);
-    const papersPerAuthor=cumPapers/Math.max(authorsTo,1);
-    
-    // Model: senior % increases with papers-per-author (correlation with field maturity)
-    const senior=Math.min(60,Math.max(10,papersPerAuthor*8));
-    const early=Math.min(50,Math.max(10,70-papersPerAuthor*3));
-    const mid=100-senior-early;
-    
-    return {early:Math.max(2,early),mid:Math.max(2,mid),senior:Math.max(2,senior)};
-  });
+  /* Research population: unique authors per year (log scale) */
+  reg('cFields',new Chart(document.getElementById('cFields'),{
+    type:'line',
+    data:{labels:years,datasets:[{
+      label:'Unique researchers',
+      data:rows.map(r=>parseInt(r.num_unique_authors)),
+      borderColor:hexA(C.magenta,.9),backgroundColor:hexA(C.magenta,.12),
+      borderWidth:2.5,fill:true,tension:0.4,
+      pointRadius:0,pointHoverRadius:6,pointBackgroundColor:hexA(C.magenta,.95),pointBorderColor:'#fff',pointBorderWidth:1
+    }]},
+    options:baseOpts({plugins:{legend:{labels:{color:tickColor(),usePointStyle:true}},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:ctx=>{const val=Math.round(ctx.parsed.y);return ` ${val.toLocaleString()} researchers`;}}}},
+      scales:{y:{type:'logarithmic',title:{display:true,text:'Researchers (log scale)',color:textColor(),font:{size:12}},grid:{color:gridColor(),drawTicks:false},border:{display:false},ticks:{color:tickColor(),callback:v=>v.toLocaleString()}},x:baseOpts().scales.x}})
+  }));
   
   const early=seniority.map(s=>s.early);
   const mid=seniority.map(s=>s.mid);
