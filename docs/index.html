@@ -387,9 +387,29 @@ a{color:inherit;text-decoration:none}
 @media (min-width:2200px){
   .content{max-width:1900px}
 }
+
+/* Status banner (data freshness) */
+.status-banner{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:linear-gradient(90deg,rgba(251,113,133,.12),rgba(139,92,246,.12));
+  border-bottom:1px solid rgba(251,113,133,.25);
+  padding:10px 16px;text-align:center;color:var(--text-2);font-size:.84rem;
+  opacity:0;visibility:hidden;transition:all .3s ease;
+  backdrop-filter:blur(12px);
+}
+.status-banner.show{
+  opacity:1;visibility:visible;
+}
+.status-banner svg{
+  display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:middle;
+  animation:spin 2s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 </style>
 </head>
 <body>
+<div class="status-banner" id="statusBanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Data is updating. Please refresh in a moment.</div>
 <div class="app">
 
   <!-- ===================== SIDEBAR ===================== -->
@@ -672,6 +692,20 @@ document.getElementById('themeToggle').addEventListener('click',()=>{
   if(window.__charts) rethemeAll();
 });
 
+/* ---------- Data freshness check ---------- */
+function checkDataFreshness(){
+  const banner=document.getElementById('statusBanner');
+  const currentYear=new Date().getFullYear();
+  window.__dataYear=null;
+  window.updateFreshnessStatus=function(dataYear){
+    window.__dataYear=dataYear;
+    if(dataYear<currentYear)banner.classList.add('show');
+    else banner.classList.remove('show');
+  };
+}
+checkDataFreshness();
+
+
 /* ---------- Sidebar / drawer ---------- */
 const sidebar=document.getElementById('sidebar');
 const backdrop=document.getElementById('backdrop');
@@ -867,6 +901,7 @@ function build(rows){
   const latest=rows[rows.length-1];
   const first=rows[0];
   document.querySelectorAll('.j-latest').forEach(e=>e.textContent=latest.year);
+  window.updateFreshnessStatus(latest.year);
   document.getElementById('foot-year').textContent=latest.year;
 
   /* ---- KPIs ---- */
