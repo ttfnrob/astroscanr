@@ -1078,9 +1078,29 @@ function build(rows){
   }));
 
   /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
+  // Career-stage composition estimated from cumulative paper publishing.
+  const senYears=years.filter((y,i)=>i%Math.ceil(years.length/22)===0||y===latest.year);
+  const senIdx=senYears.map(y=>years.indexOf(y));
   
+  // Calculate cumulative papers and papers-per-author for each sample year
+  let cumPapers=0;
+  const seniority=senIdx.map(i=>{
+    const rowsTo=rows.slice(0,i+1);
+    cumPapers=rowsTo.reduce((s,r)=>s+parseFloat(r.papers),0);
+    const authorsTo=parseFloat(rows[i].authors);
+    const papersPerAuthor=cumPapers/Math.max(authorsTo,1);
+    
+    // Model: senior % increases with papers-per-author (correlation with field maturity)
+    const senior=Math.min(60,Math.max(10,papersPerAuthor*8));
+    const early=Math.min(50,Math.max(10,70-papersPerAuthor*3));
+    const mid=100-senior-early;
+    
+    return {early:Math.max(2,early),mid:Math.max(2,mid),senior:Math.max(2,senior)};
+  });
   
   const early=seniority.map(s=>s.early);
+  const mid=seniority.map(s=>s.mid);
+  const senior=seniority.map(s=>s.senior);.map(s=>s.early);
   const mid=seniority.map(s=>s.mid);
   const senior=seniority.map(s=>s.senior);
   reg('cSeniority',new Chart(document.getElementById('cSeniority'),{
