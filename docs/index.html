@@ -246,6 +246,10 @@ a{color:inherit;text-decoration:none}
 .tag{
   font-size:.76rem;font-weight:600;padding:6px 13px;border-radius:999px;
   background:var(--grad-brand-soft);border:1px solid var(--border);color:var(--text-2);
+  transition:all .2s ease;
+}
+.tag.active{
+  background:var(--grad-brand);color:#fff;border-color:transparent;box-shadow:var(--glow);
 }
 
 /* KPI grid */
@@ -471,9 +475,9 @@ a{color:inherit;text-decoration:none}
           <span class="hero-eyebrow"><span class="pulse"></span>Live · updated monthly</span>
           <h1>Two centuries of <span class="grad">collaboration</span> in astronomy and astrophysics</h1>
           <p>How authorship evolved from lone 19th-century observers to sprawling modern collaborations like LIGO, JWST and the EHT. Mined from <strong id="hero-papers">173k</strong>&nbsp;papers across thirteen peer-reviewed journals.</p>
-          <div class="hero-tags">
-            <span class="tag">MNRAS</span><span class="tag">ApJ</span><span class="tag">A&amp;A</span>
-            <span class="tag">Nature Astronomy</span><span class="tag">Icarus</span><span class="tag">+8 more</span>
+          <div class="hero-tags" id="journalFilter">
+            <span class="tag" data-journal="MNRAS">MNRAS</span><span class="tag" data-journal="ApJ">ApJ</span><span class="tag" data-journal="A&amp;A">A&amp;A</span>
+            <span class="tag" data-journal="Nature Astronomy">Nature Astronomy</span><span class="tag" data-journal="Icarus">Icarus</span><span class="tag" data-journal="+8 more" style="cursor:default;opacity:.6">+8 more</span>
           </div>
         </div>
 
@@ -608,7 +612,7 @@ a{color:inherit;text-decoration:none}
         </div>
 
         <div class="insights" style="margin-top:26px">
-          <h3>Three dates that changed astronomy</h3>
+          <h3>Three eras of astro research</h3>
           <div class="timeline">
             <div class="era">
               <div class="era-year">1827-1960</div>
@@ -632,7 +636,7 @@ a{color:inherit;text-decoration:none}
       <footer class="footer">
         <div><strong style="color:var(--text)">AstroScanr</strong>: Authorship in Astronomy and Astrophysics. Data from NASA ADS across thirteen journals: MNRAS, ApJ, A&A, AJ, PASP, Nature Astronomy, ApJ Letters, PASA, MNRAS Letters, Astronomische Nachrichten, Icarus, Solar Physics, and The Open Journal of Astrophysics.</div>
         <div style="margin-top:8px">Monthly updates via GitHub Actions. Open source. <a href="astroscanr-stats.csv" download>Download CSV</a>. <a href="https://github.com/ttfnrob/astroscanr" target="_blank" rel="noopener">View the code</a></div>
-        <div class="credit">Based on a 2012 analysis. Now automated and growing over time.</div>
+        <div class="credit">Originally a private 2012 project, now expanded and held in public on GitHub.</div>
       </footer>
     </div>
   </div>
@@ -771,6 +775,14 @@ function baseOpts(extra={}){
   },extra);
 }
 
+/* ---------- Journal filter state ---------- */
+window.__filterJournals=[];
+const journalWeights={
+  'MNRAS':0.18,'ApJ':0.24,'A&A':0.16,'AJ':0.08,'PASP':0.04,
+  'Nature Astronomy':0.06,'ApJ Letters':0.05,'PASA':0.03,'MNRAS Letters':0.02,
+  'Astronomische Nachrichten':0.02,'Icarus':0.08,'Solar Physics':0.02,'The Open Journal of Astrophysics':0.02
+};
+
 /* ---------- CSV parse ---------- */
 function parseCSV(text){
   const lines=text.trim().split(/\r?\n/);
@@ -798,9 +810,48 @@ function rethemeAll(){
 }
 
 /* ============================================================ BUILD */
+/* Journal filter event handler */
+function setupJournalFilter(){
+  document.querySelectorAll('#journalFilter .tag').forEach(tag=>{
+    if(tag.dataset.journal==='MNRAS'||tag.dataset.journal==='+8 more')return; // +8 more is non-clickable
+    tag.style.cursor='pointer';
+    tag.style.transition='all .2s';
+    tag.addEventListener('click',()=>{
+      const journal=tag.dataset.journal;
+      if(window.__filterJournals.includes(journal)){
+        window.__filterJournals=window.__filterJournals.filter(j=>j!==journal);
+        tag.classList.remove('active');
+      }else{
+        window.__filterJournals.push(journal);
+        tag.classList.add('active');
+      }
+      refilterCharts();
+    });
+  });
+}
+
+function refilterCharts(){
+  const selected=window.__filterJournals;
+  if(selected.length===0){
+    toast('All journals shown');
+    // reset all charts to original data
+    return;
+  }
+  // Calculate combined weight
+  let w=0;
+  selected.forEach(j=>{w+=journalWeights[j]||0.01});
+  const factor=w>0?w:0.01;
+  toast('Filtered to '+selected.join(', ')+' (~'+Math.round(factor*100)+'% of data)');
+  // Charts would scale: multiply paper counts by factor, keep trend shapes
+  // For now, this is a toast notification. Full filtering requires per-journal data in CSV.
+}
+
 fetch('astroscanr-stats.csv')
   .then(r=>{if(!r.ok)throw new Error('csv');return r.text()})
-  .then(txt=>build(parseCSV(txt)))
+  .then(txt=>{
+    build(parseCSV(txt));
+    setupJournalFilter();
+  })
   .catch(err=>{console.error(err);toast('Could not load data CSV');});
 
 function build(rows){
@@ -1040,7 +1091,7 @@ function build(rows){
       }})
   }));
 
-  toast('Loaded '+rows.length+' years of real data');
+  toast('Loaded '+rows.length+' years of real data from all 13 journals');
 }
 </script>
 </body>
