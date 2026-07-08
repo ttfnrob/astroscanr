@@ -609,7 +609,7 @@ a{color:inherit;text-decoration:none}
           </div>
           <div class="card span-5">
             <div class="card-head"><div><div class="card-title">Seniority mix over time </div></div></div>
-            <p class="card-desc">Estimated composition of paper authorship by career stage: early, mid and senior researchers.</p>
+            <p class="card-desc">Estimated career-stage composition based on cumulative paper productivity. Senior researchers correlate with higher publication volume over time.</p>
             <div class="chart-wrap tall"><canvas id="cSeniority"></canvas></div>
           </div>
         </div>
@@ -1086,15 +1086,30 @@ function build(rows){
   }));
 
   /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
-  // Illustrative career-stage composition tracking the rise of large teams (more early-career members).
+  // Career-stage composition estimated from cumulative paper publishing.
+  // Assumption: researchers who have published more papers historically are more senior.
   const senYears=years.filter((y,i)=>i%Math.ceil(years.length/22)===0||y===latest.year);
   const senIdx=senYears.map(y=>years.indexOf(y));
-  const mkSen=(base,slope)=>senIdx.map(i=>{
-    const t=(rows[i].year-first.year)/(latest.year-first.year);
-    return Math.max(2,Math.min(96,base+slope*t*100+ (rows[i].p5-30)*0.15));
+  
+  // Calculate cumulative papers and papers-per-author for each sample year
+  let cumPapers=0;
+  const seniority=senIdx.map(i=>{
+    const rowsTo=rows.slice(0,i+1);
+    cumPapers=rowsTo.reduce((s,r)=>s+parseFloat(r.num_papers),0);
+    const authorsTo=parseFloat(rows[i].num_unique_authors);
+    const papersPerAuthor=cumPapers/Math.max(authorsTo,1);
+    
+    // Model: senior % increases with papers-per-author (correlation with field maturity)
+    const senior=Math.min(60,Math.max(10,papersPerAuthor*8));
+    const early=Math.min(50,Math.max(10,70-papersPerAuthor*3));
+    const mid=100-senior-early;
+    
+    return {early:Math.max(2,early),mid:Math.max(2,mid),senior:Math.max(2,senior)};
   });
-  const early=mkSen(18,0.35),senior=mkSen(46,-0.30);
-  const mid=senYears.map((_,k)=>Math.max(2,100-early[k]-senior[k]));
+  
+  const early=seniority.map(s=>s.early);
+  const mid=seniority.map(s=>s.mid);
+  const senior=seniority.map(s=>s.senior);
   reg('cSeniority',new Chart(document.getElementById('cSeniority'),{
     type:'bar',
     data:{labels:senYears,datasets:[
