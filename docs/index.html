@@ -1074,7 +1074,7 @@ function build(rows){
       pointRadius:0,pointHoverRadius:6,pointBackgroundColor:hexA(C.magenta,.95),pointBorderColor:'#fff',pointBorderWidth:1
     }]},
     options:baseOpts({plugins:{legend:{labels:{color:tickColor(),usePointStyle:true}},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:ctx=>{const val=Math.round(ctx.parsed.y);return ` ${val.toLocaleString()} researchers`;}}}},
-      scales:{y:{type:'logarithmic',title:{display:true,text:'Researchers (log scale)',color:textColor(),font:{size:12}},grid:{color:gridColor(),drawTicks:false},border:{display:false},ticks:{color:tickColor(),callback:v=>v.toLocaleString()}},x:baseOpts().scales.x}})
+      scales:{y:{type:'logarithmic',title:{display:true,text:'Researchers (log scale)',color:tickColor(),font:{size:12}},grid:{color:gridColor(),drawTicks:false},border:{display:false},ticks:{color:tickColor(),callback:v=>v.toLocaleString()}},x:baseOpts().scales.x}})
   }));
 
   /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
