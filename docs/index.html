@@ -1062,31 +1062,8 @@ function build(rows){
     options:baseOpts({plugins:{legend:{display:false},tooltip:baseOpts().plugins.tooltip}})
   }));
 
-  /* ============ CHART 8 · Research population over time (snapshot) ============ */
-  // Derived snapshot reflecting extended analysis (compact objects & surveys lead).
-  const fields=[
-    {f:'Compact Objects',v:+(latest.avg*2.0).toFixed(1)},
-    {f:'Surveys / Photometry',v:+(latest.avg*1.45).toFixed(1)},
-    {f:'Cosmology',v:+(latest.avg*1.3).toFixed(1)},
-    {f:'Star Formation',v:+(latest.avg*1.15).toFixed(1)},
-    {f:'Galaxies',v:+(latest.avg*1.05).toFixed(1)},
-    {f:'Exoplanets',v:+(latest.avg*0.95).toFixed(1)},
-    {f:'Stellar Physics',v:+(latest.avg*0.8).toFixed(1)},
-    {f:'Other',v:+(latest.avg*0.7).toFixed(1)},
-  ].sort((a,b)=>b.v-a.v);
-  reg('cFields',new Chart(document.getElementById('cFields'),{
-    type:'bar',
-    data:{labels:fields.map(f=>f.f),datasets:[{
-      label:'Avg authors',data:fields.map(f=>f.v),borderRadius:8,borderSkipped:false,
-      backgroundColor:(ctx)=>lineGrad(ctx.chart.ctx,ctx.chart.chartArea,[C.magenta,C.purple,C.cyan]),
-      barThickness:'flex',maxBarThickness:26,
-    }]},
-    options:baseOpts({indexAxis:'y',plugins:{legend:{display:false},tooltip:baseOpts().plugins.tooltip},
-      scales:{x:{...baseOpts().scales.x,beginAtZero:true},y:{grid:{display:false},border:{display:false},ticks:{color:tickColor()}}}})
-  }));
-
-  /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
-  /* Research population: unique authors per year (log scale) */
+  /* ============ CHART 8 · Research population over time ============ */
+  // Unique researchers per year as proxy for research community size.
   reg('cFields',new Chart(document.getElementById('cFields'),{
     type:'line',
     data:{labels:years,datasets:[{
@@ -1099,6 +1076,9 @@ function build(rows){
     options:baseOpts({plugins:{legend:{labels:{color:tickColor(),usePointStyle:true}},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:ctx=>{const val=Math.round(ctx.parsed.y);return ` ${val.toLocaleString()} researchers`;}}}},
       scales:{y:{type:'logarithmic',title:{display:true,text:'Researchers (log scale)',color:textColor(),font:{size:12}},grid:{color:gridColor(),drawTicks:false},border:{display:false},ticks:{color:tickColor(),callback:v=>v.toLocaleString()}},x:baseOpts().scales.x}})
   }));
+
+  /* ============ CHART 9 · Seniority mix (derived stacked) ============ */
+  
   
   const early=seniority.map(s=>s.early);
   const mid=seniority.map(s=>s.mid);
