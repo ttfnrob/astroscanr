@@ -260,9 +260,10 @@ def build_dataset_from_cache(cache, current_year_only=False, use_all_journals=Tr
     return dict(dataset)
 
 def analyze_dataset(dataset):
-    """Compute statistics from the dataset for plotting."""
+    """Compute statistics from the dataset for plotting (aggregated + per-journal)."""
     years = sorted(dataset.keys())
     
+    # Initialize aggregated stats (original columns for backward compat)
     stats = {
         "year": [],
         "avg_authors": [],
@@ -276,6 +277,13 @@ def analyze_dataset(dataset):
         "num_unique_authors": [],
         "citation_pct_1author": [],
     }
+    
+    # Add per-journal column templates
+    for journal in JOURNALS:
+        stats[f"avg_authors_{journal}"] = []
+        stats[f"max_authors_{journal}"] = []
+        stats[f"num_papers_{journal}"] = []
+        stats[f"num_unique_authors_{journal}"] = []
     
     for year in years:
         data = dataset[year]
@@ -407,6 +415,30 @@ def plot_people_vs_papers_ratio(stats, output_dir="."):
     plt.close(fig)
     print("✓ Saved: 06-ratio.png")
 
+
+def fill_per_journal_stats(stats, cache):
+    """Fill per-journal stats from cache into stats dict."""
+    for i, year in enumerate(stats["year"]):
+        year_str = str(year)
+        year_data = cache.get(year_str, {})
+        
+        for journal in JOURNALS:
+            journal_papers = year_data.get(journal, [])
+            
+            if journal_papers:
+                author_counts = [p.get("num_authors", 0) for p in journal_papers if p.get("num_authors", 0) > 0]
+                author_names = set()
+                for p in journal_papers:
+                    author_names.update(p.get("authors", []))
+                
+                if author_counts:
+                    stats[f"avg_authors_{journal}"][i] = np.mean(author_counts)
+                    stats[f"max_authors_{journal}"][i] = max(author_counts)
+                    stats[f"num_papers_{journal}"][i] = len(author_counts)
+                    stats[f"num_unique_authors_{journal}"][i] = len(author_names)
+    
+    return stats
+
 def main():
     print("=" * 70)
     print("AstroScanr: Authorship Patterns in Astronomical Literature")
@@ -532,6 +564,7 @@ def main():
     try:
         print("\nAnalyzing...", end=" ", flush=True)
         stats = analyze_dataset(dataset)
+        stats = fill_per_journal_stats(stats, cache)
         print(f"Done ({len(stats['year'])} years)", flush=True)
         
         print("\nGenerating plots...", flush=True)
