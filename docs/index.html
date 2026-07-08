@@ -1068,7 +1068,7 @@ function build(rows){
     type:'line',
     data:{labels:years,datasets:[{
       label:'Unique researchers',
-      data:rows.map(r=>parseInt(r.num_unique_authors)),
+      data:rows.map(r=>parseInt(r.authors)),
       borderColor:hexA(C.magenta,.9),backgroundColor:hexA(C.magenta,.12),
       borderWidth:2.5,fill:true,tension:0.4,
       pointRadius:0,pointHoverRadius:6,pointBackgroundColor:hexA(C.magenta,.95),pointBorderColor:'#fff',pointBorderWidth:1
