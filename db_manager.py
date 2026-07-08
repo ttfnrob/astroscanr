@@ -307,7 +307,7 @@ class AstroScanrDB:
 
         Returns the number of (year, journal-or-rollup) rows written.
         """
-        if year_or_all == "all":
+        if year_or_all == "all" or year_or_all is None:
             years = [
                 r[0]
                 for r in self.conn.execute(
