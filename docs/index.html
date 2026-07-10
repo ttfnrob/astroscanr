@@ -901,6 +901,9 @@ function refilterCharts(){
   
   // Rebuild all charts with new data
   if(dataToUse&&dataToUse.length>0){
+    // Destroy existing charts before rebuilding
+    Object.values(window.__charts).forEach(ch=>{if(ch)ch.destroy();});
+    window.__charts={};
     build(dataToUse);
   }
 }
