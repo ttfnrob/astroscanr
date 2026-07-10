@@ -70,7 +70,7 @@ def fetch_papers_by_year(journal, year, requests_used, skip_existing=True):
     params = {
         'q': query,
         'rows': 200,
-        'fl': 'bibcode,year,authors,citation_count',
+        'fl': 'bibcode,year,author,citation_count,author_count',
         'start': 0,
     }
     
@@ -109,12 +109,14 @@ def fetch_papers_by_year(journal, year, requests_used, skip_existing=True):
                     break
                 
                 for doc in docs:
-                    authors = doc.get('authors', [])
+                    # API field is 'author' not 'authors'
+                    authors = doc.get('author', [])
+                    num_authors = len(authors) if authors else doc.get('author_count', 0)
                     papers.append({
                         'bibcode': doc['bibcode'],
                         'year': doc['year'],
                         'journal': journal,
-                        'num_authors': len(authors),
+                        'num_authors': num_authors,
                         'authors': json.dumps(authors),
                         'citation_count': doc.get('citation_count', 0),
                     })
