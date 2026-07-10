@@ -875,7 +875,7 @@ function refilterCharts(){
   if(selected.length>0){
     // Aggregate data from selected journals only
     if(!window.__perJournalData){console.warn('Per-journal data not available');return;}
-    const perJournal=window.__perJournal Data;
+    const perJournal=window.__perJournalData;
     const years=new Set();
     selected.forEach(j=>{(perJournal[j]||[]).forEach(r=>{years.add(r.year);});});
     const yearList=Array.from(years).sort((a,b)=>a-b);
