@@ -847,7 +847,7 @@ function rethemeAll(){
 /* Journal filter event handler */
 function setupJournalFilter(){
   document.querySelectorAll('#journalFilter .tag').forEach(tag=>{
-    if(tag.dataset.journal==='MNRAS'||tag.dataset.journal==='+8 more')return; // +8 more is non-clickable
+    if(tag.dataset.journal==='+8 more')return; // +8 more is non-clickable
     tag.style.cursor='pointer';
     tag.style.transition='all .2s';
     tag.addEventListener('click',()=>{
