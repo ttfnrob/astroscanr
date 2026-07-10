@@ -22,87 +22,26 @@ jobs:
       
       - run: pip install -r requirements.txt
 
-      - name: Download papers cache from release
-        run: |
-          mkdir -p data
-          curl -L --retry 3 --retry-delay 5 \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -o data/historical_papers.json \
-            "https://github.com/ttfnrob/astroscanr/releases/download/cache-v1/historical_papers.json" \
-            && echo "Cache downloaded: $(du -sh data/historical_papers.json | cut -f1)" \
-            || echo "No cache found, starting fresh"
-      
-      - name: Daily incremental build (resumes from checkpoint)
+      - name: Daily incremental build (SQLite, resumes from checkpoint)
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
         run: |
           python3 astroscanr.py
-
-      - name: Upload updated cache to release
-        run: |
-          # Delete existing asset and re-upload updated cache
-          ASSET_ID=$(curl -s \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/ttfnrob/astroscanr/releases/tags/cache-v1" \
-            | python3 -c "import sys, json; assets=json.load(sys.stdin).get('assets',[]); [print(a['id']) for a in assets if a['name']=='historical_papers.json']" 2>/dev/null || echo "")
-          
-          if [ -n "$ASSET_ID" ]; then
-            curl -s -X DELETE \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/ttfnrob/astroscanr/releases/assets/$ASSET_ID"
-            echo "Deleted old cache asset $ASSET_ID"
-          fi
-          
-          FILE_SIZE=$(du -sh data/historical_papers.json | cut -f1)
-          curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            "https://uploads.github.com/repos/ttfnrob/astroscanr/releases/320242176/assets?name=historical_papers.json" \
-            --data-binary @data/historical_papers.json \
-            | python3 -c "import sys, json; d=json.load(sys.stdin); print(f'Cache uploaded: {d.get(\"size\",0)/1e6:.1f} MB, state={d.get(\"state\")}')"
       
-      - name: Daily analysis from cached data
+      - name: Export aggregated stats CSV (all journals)
         run: |
-          python3 << 'PYEOF'
-          import json, os, sys
-          
-          cache_file = "data/historical_papers.json"
-          if not os.path.exists(cache_file):
-              print("No cache file yet, skipping analysis")
-              sys.exit(0)
-          
-          from astroscanr import build_dataset_from_cache, analyze_dataset
-          from astroscanr import plot_average_authors, plot_avg_and_max_authors_log
-          from astroscanr import plot_author_distribution, plot_citation_weighted_distribution
-          from astroscanr import plot_population_and_papers, plot_people_vs_papers_ratio
-          import pandas as pd
-          
-          os.makedirs("docs", exist_ok=True)
-          
-          cache = json.load(open(cache_file))
-          dataset = build_dataset_from_cache(cache, current_year_only=False)
-          
-          if dataset:
-              stats = analyze_dataset(dataset)
-              plot_average_authors(stats, "docs")
-              plot_avg_and_max_authors_log(stats, "docs")
-              plot_author_distribution(stats, "docs")
-              plot_citation_weighted_distribution(stats, "docs")
-              plot_population_and_papers(stats, "docs")
-              plot_people_vs_papers_ratio(stats, "docs")
-              df = pd.DataFrame(stats)
-              df.to_csv("docs/astroscanr-stats.csv", index=False)
-              print(f"Analysis complete: {len(stats['year'])} years")
-          PYEOF
+          python3 export_csv.py --output docs/astroscanr-stats.csv
+      
+      - name: Export per-journal stats CSV (for dashboard filtering)
+        run: |
+          python3 export_csv.py --journals all --output docs/astroscanr-stats-by-journal.csv
       
       - name: Prepare and commit results
         run: |
           mkdir -p docs
-          mv astroscanr-*.png docs/ 2>/dev/null || true
-          mv astroscanr-stats.csv docs/ 2>/dev/null || true
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-stats.csv data/fetch_checkpoint.json
+          git add -f docs/astroscanr-*.png docs/astroscanr-*.csv data/fetch_checkpoint.json astroscanr.db
           git commit -m "Auto: daily build + analysis ($(date +%Y-%m-%d))" || exit 0
           git push
 
@@ -118,28 +57,21 @@ jobs:
       
       - run: pip install -r requirements.txt
 
-      - name: Download papers cache from release
-        run: |
-          mkdir -p data
-          curl -L --retry 3 --retry-delay 5 \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -o data/historical_papers.json \
-            "https://github.com/ttfnrob/astroscanr/releases/download/cache-v1/historical_papers.json" \
-            && echo "Cache downloaded: $(du -sh data/historical_papers.json | cut -f1)" \
-            || echo "No cache found, starting fresh"
-
       - name: Monthly extended analysis (plots 7-10)
         env:
           ADS_API_KEY: ${{ secrets.ADS_API_KEY }}
         run: |
           python3 astroscanr-extended.py
       
+      - name: Export per-journal stats for extended analysis
+        run: |
+          python3 export_csv.py --journals all --output docs/astroscanr-stats-by-journal.csv
+      
       - name: Prepare and commit results
         run: |
           mkdir -p docs
-          mv astroscanr-*.png docs/ 2>/dev/null || true
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png
+          git add -f docs/astroscanr-*.png docs/astroscanr-*.csv
           git commit -m "Auto: monthly extended analysis ($(date +%Y-%m-%d))" || exit 0
           git push
