@@ -52,6 +52,9 @@ DB_FILE = "astroscanr.db"
 
 MIN_REQUEST_INTERVAL = 1.0
 RATE_LIMIT_THRESHOLD = 4500
+REQUEST_TIMEOUT = 60  # Increased from 30s to 60s
+MAX_RETRIES = 3
+RETRY_DELAY = 2.0
 
 def fetch_papers_by_year(journal, year, requests_used, skip_existing=True):
     """Fetch papers for a specific journal and year from NASA ADS."""
@@ -61,8 +64,8 @@ def fetch_papers_by_year(journal, year, requests_used, skip_existing=True):
     
     time.sleep(MIN_REQUEST_INTERVAL)
     
-    # Query: papers in journal for given year
-    query = f'bibstem="{journal}" AND year:{year}'
+    # Query: papers in journal for given year (use bibstem shorthand)
+    query = f'bibstem:{journal} AND year:{year}'
     
     params = {
         'q': query,
@@ -78,41 +81,65 @@ def fetch_papers_by_year(journal, year, requests_used, skip_existing=True):
     
     while True:
         params['start'] = start
-        try:
-            r = requests.get(ADS_API_URL, params=params, headers=headers, timeout=30)
-            if r.status_code != 200:
-                print(f"  ⚠️ {journal} {year}: HTTP {r.status_code}")
-                break
-            
-            data = r.json()
-            requests_used += 1
-            
-            if 'response' not in data or 'docs' not in data['response']:
-                break
-            
-            docs = data['response']['docs']
-            if not docs:
-                break
-            
-            for doc in docs:
-                authors = doc.get('authors', [])
-                papers.append({
-                    'bibcode': doc['bibcode'],
-                    'year': doc['year'],
-                    'journal': journal,
-                    'num_authors': len(authors),
-                    'authors': json.dumps(authors),
-                    'citation_count': doc.get('citation_count', 0),
-                })
-            
-            # Check if there are more results
-            if len(docs) < 200:
-                break
-            
-            start += 200
+        retry_count = 0
+        success = False
         
-        except Exception as e:
-            print(f"  ⚠️ {journal} {year}: {e}")
+        while retry_count < MAX_RETRIES and not success:
+            try:
+                r = requests.get(ADS_API_URL, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
+                if r.status_code == 401:
+                    print(f"  ❌ {journal} {year}: HTTP 401 Unauthorized — check ADS_API_KEY")
+                    return papers, requests_used
+                elif r.status_code == 429:
+                    print(f"  ⚠️ {journal} {year}: HTTP 429 Rate Limited")
+                    return papers, requests_used
+                elif r.status_code != 200:
+                    print(f"  ⚠️ {journal} {year}: HTTP {r.status_code}")
+                    break
+                
+                data = r.json()
+                requests_used += 1
+                success = True
+                
+                if 'response' not in data or 'docs' not in data['response']:
+                    break
+                
+                docs = data['response']['docs']
+                if not docs:
+                    break
+                
+                for doc in docs:
+                    authors = doc.get('authors', [])
+                    papers.append({
+                        'bibcode': doc['bibcode'],
+                        'year': doc['year'],
+                        'journal': journal,
+                        'num_authors': len(authors),
+                        'authors': json.dumps(authors),
+                        'citation_count': doc.get('citation_count', 0),
+                    })
+                
+                # Check if there are more results
+                if len(docs) < 200:
+                    break
+                
+                start += 200
+            
+            except requests.exceptions.Timeout:
+                retry_count += 1
+                if retry_count < MAX_RETRIES:
+                    wait_time = RETRY_DELAY * (2 ** (retry_count - 1))  # Exponential backoff
+                    print(f"  ⏳ {journal} {year}: Timeout (retry {retry_count}/{MAX_RETRIES} in {wait_time}s)")
+                    time.sleep(wait_time)
+                else:
+                    print(f"  ⚠️ {journal} {year}: Timeout after {MAX_RETRIES} retries")
+                    break
+            
+            except Exception as e:
+                print(f"  ⚠️ {journal} {year}: {e}")
+                break
+        
+        if not success:
             break
     
     return papers, requests_used
@@ -221,6 +248,11 @@ def main():
 
 def plot_average_authors(stats, output_dir="."):
     """Plot 1: Average authors per paper over time."""
+    # Guard against empty data
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 01-avg-authors.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(stats["year"], stats["avg_authors"], linewidth=2.5, color="steelblue")
     ax.axvline(x=1960, color="gray", linestyle="--", alpha=0.5)
@@ -235,6 +267,10 @@ def plot_average_authors(stats, output_dir="."):
 
 def plot_avg_and_max_authors_log(stats, output_dir="."):
     """Plot 2: Avg and max authors on log scale."""
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 02-avg-max-authors.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.semilogy(stats["year"], stats["avg_authors"], label="Average", linewidth=2.5, color="steelblue", marker='o', markersize=3)
     ax.semilogy(stats["year"], stats["max_authors"], label="Maximum", linewidth=2.5, color="coral", marker='s', markersize=3, alpha=0.7)
@@ -251,6 +287,10 @@ def plot_avg_and_max_authors_log(stats, output_dir="."):
 
 def plot_author_distribution(stats, output_dir="."):
     """Plot 3: Distribution of single/multi-author papers."""
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 03-author-dist.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.stackplot(
         stats["year"],
@@ -274,6 +314,10 @@ def plot_author_distribution(stats, output_dir="."):
 
 def plot_single_author_decline(stats, output_dir="."):
     """Plot 4: Decline of single-author papers."""
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 04-single-author.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(stats["year"], stats["pct_1author"], width=0.8, color="steelblue", alpha=0.7)
     ax.axvline(x=1960, color="gray", linestyle="--", alpha=0.5, label="1960 pivot")
@@ -288,6 +332,10 @@ def plot_single_author_decline(stats, output_dir="."):
 
 def plot_citation_pct_single_author(stats, output_dir="."):
     """Plot 5: Citation percentage of single-author papers."""
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 05-citations.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(stats["year"], stats["citation_pct_1author"], linewidth=2.5, color="coral", marker='o', markersize=4)
     ax.set_xlabel("Year", fontsize=12)
@@ -301,6 +349,10 @@ def plot_citation_pct_single_author(stats, output_dir="."):
 
 def plot_people_vs_papers_ratio(stats, output_dir="."):
     """Plot 6: Unique authors per paper ratio."""
+    if not stats.get("year") or len(stats["year"]) == 0:
+        print("⚠️ Skipped: 06-ratio.png (no data)")
+        return
+    
     fig, ax = plt.subplots(figsize=(12, 6))
     ratio = [a / p if p > 0 else 0 for a, p in zip(stats["num_unique_authors"], stats["num_papers"])]
     ax.plot(stats["year"], ratio, linewidth=2.5, color="darkgreen", marker='o', markersize=4)
