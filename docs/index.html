@@ -864,39 +864,78 @@ function setupJournalFilter(){
   });
 }
 
+// Global data store for filtering
+window.__allJournalsData=null;
+window.__perJournalData=null;
+
 function refilterCharts(){
   const selected=window.__filterJournals;
-  if(selected.length===0){
+  let dataToUse=window.__allJournalsData;
+  
+  if(selected.length>0){
+    // Aggregate data from selected journals only
+    if(!window.__perJournalData){console.warn('Per-journal data not available');return;}
+    const perJournal=window.__perJournal Data;
+    const years=new Set();
+    selected.forEach(j=>{(perJournal[j]||[]).forEach(r=>{years.add(r.year);});});
+    const yearList=Array.from(years).sort((a,b)=>a-b);
+    
+    dataToUse=yearList.map(y=>{
+      let avg=0,max=0,papers=0,authors=0,p1=0,p2=0,p3=0,p4=0,p5=0,cite1=0,count=0;
+      selected.forEach(j=>{
+        const yr=(perJournal[j]||[]).find(r=>r.year===y);
+        if(yr){
+          avg+=yr.avg*yr.papers; max=Math.max(max,yr.max); papers+=yr.papers;
+          authors+=yr.authors; p1+=yr.p1*yr.papers; p2+=yr.p2*yr.papers; p3+=yr.p3*yr.papers;
+          p4+=yr.p4*yr.papers; p5+=yr.p5*yr.papers; cite1+=yr.cite1*yr.papers; count+=yr.papers;
+        }
+      });
+      if(count===0)return null;
+      return {year:y,avg:avg/count,max,papers,authors,p1:p1/count,p2:p2/count,p3:p3/count,p4:p4/count,p5:p5/count,cite1:cite1/count};
+    }).filter(x=>x);
+    
+    toast('Filtered to '+selected.join(', '));
+  }else{
     toast('All journals shown');
-    // reset all charts to original data
-    return;
   }
-  // Calculate combined weight
-  let w=0;
-  selected.forEach(j=>{w+=journalWeights[j]||0.01});
-  const factor=w>0?w:0.01;
-  toast('Filtered to '+selected.join(', ')+' (~'+Math.round(factor*100)+'% of data)');
-  // Charts would scale: multiply paper counts by factor, keep trend shapes
-  // For now, this is a toast notification. Full filtering requires per-journal data in CSV.
+  
+  // Rebuild all charts with new data
+  if(dataToUse&&dataToUse.length>0){
+    build(dataToUse);
+  }
 }
 
-fetch('astroscanr-stats.csv')
-  .then(r=>{if(!r.ok)throw new Error('csv');return r.text()})
-  .then(txt=>{
-    build(parseCSV(txt));
-    setupJournalFilter();
-  })
-  .catch(err=>{console.error(err);toast('Could not load data CSV');});
+// Load both aggregated and per-journal data
+Promise.all([
+  fetch('astroscanr-stats.csv').then(r=>{if(!r.ok)throw new Error('csv');return r.text()}).then(txt=>parseCSV(txt)),
+  fetch('astroscanr-stats-by-journal.csv').then(r=>{if(!r.ok){console.warn('Per-journal CSV not available');return null;}return r.text();}).then(txt=>txt?parseCSV(txt):null)
+]).then(([allData,byJournal])=>{
+  // Parse aggregated data
+  window.__allJournalsData=allData.filter(r=>r.year&&!isNaN(+r.year)).map(r=>({
+    year:+r.year,avg:+r.avg_authors,max:+r.max_authors,p1:+r.pct_1author,p2:+r.pct_2author,
+    p3:+r.pct_3author,p4:+r.pct_4author,p5:+r.pct_5plus,papers:+r.num_papers,authors:+r.num_unique_authors,cite1:+r.citation_pct_1author
+  }));
+  
+  // Parse per-journal data if available
+  if(byJournal){
+    window.__perJournalData={};
+    byJournal.forEach(r=>{
+      const j=r.journal;
+      if(!window.__perJournalData[j])window.__perJournalData[j]=[];
+      window.__perJournalData[j].push({
+        year:+r.year,avg:+r.avg_authors,max:+r.max_authors,p1:+r.pct_1author,p2:+r.pct_2author,
+        p3:+r.pct_3author,p4:+r.pct_4author,p5:+r.pct_5plus,papers:+r.num_papers,authors:+r.num_unique_authors,cite1:+r.citation_pct_1author
+      });
+    });
+  }
+  
+  build(window.__allJournalsData);
+  setupJournalFilter();
+}).catch(err=>{console.error(err);toast('Could not load CSV data');});
 
 function build(rows){
-  rows=rows.filter(r=>r.year&&!isNaN(+r.year)).map(r=>({
-    year:+r.year,
-    avg:+r.avg_authors,
-    max:+r.max_authors,
-    p1:+r.pct_1author,p2:+r.pct_2author,p3:+r.pct_3author,p4:+r.pct_4author,p5:+r.pct_5plus,
-    papers:+r.num_papers,authors:+r.num_unique_authors,
-    cite1:+r.citation_pct_1author
-  }));
+  // Ensure rows are already in the right format (may come from CSV or from refilterCharts)
+  if(!rows||rows.length===0)return;
   const years=rows.map(r=>r.year);
   const latest=rows[rows.length-1];
   const first=rows[0];
