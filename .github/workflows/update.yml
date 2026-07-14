@@ -41,7 +41,7 @@ jobs:
           mkdir -p docs
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add -f docs/astroscanr-*.png docs/astroscanr-*.csv data/fetch_checkpoint.json astroscanr.db
+          git add -f docs/astroscanr-*.png docs/astroscanr-*.csv astroscanr.db
           git commit -m "Auto: daily build + analysis ($(date +%Y-%m-%d))" || exit 0
           git push
 
