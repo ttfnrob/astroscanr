@@ -156,26 +156,37 @@ def fetch_incremental(db, journals_to_fetch, years_to_fetch=None):
     
     papers_fetched = 0
     journals_with_data = []  # Track which journals actually produced papers
+    consecutive_empty_fetches = 0  # Track consecutive failed fetches (rate limit indicator)
     
     for journal in journals_to_fetch:
         journal_had_data = False
         for year in years_to_fetch:
             if requests_used >= RATE_LIMIT_THRESHOLD:
                 print(f"⚠️ Rate limit threshold ({RATE_LIMIT_THRESHOLD}) reached. Stopping.")
-                # Only mark journals as complete if they had data
-                db.save_checkpoint(len(journals_with_data), journals_with_data, requests_used)
-                return papers_fetched
+                break
             
             papers, requests_used = fetch_papers_by_year(journal, year, requests_used)
             if papers:
                 db.insert_papers(journal, year, papers)
                 papers_fetched += len(papers)
                 journal_had_data = True
+                consecutive_empty_fetches = 0  # Reset counter on success
+            else:
+                # No papers returned; could be empty journal OR rate limit (429)
+                consecutive_empty_fetches += 1
+                # If we get 10+ consecutive empty fetches, we're likely rate-limited
+                if consecutive_empty_fetches >= 10:
+                    print(f"⚠️ Persistent empty responses (likely rate-limited). Stopping.")
+                    break
+        
+        # Exit journals loop if we're rate-limited
+        if consecutive_empty_fetches >= 10:
+            break
         
         if journal_had_data:
             journals_with_data.append(journal)
     
-    return papers_fetched
+    return papers_fetched, journals_with_data, requests_used
 
 def main():
     print("=" * 70)
@@ -216,7 +227,7 @@ def main():
     
     # Fetch papers
     print("Fetching papers from NASA ADS...")
-    papers_count, journals_with_data = fetch_incremental(db, journals_to_fetch, years_to_fetch)
+    papers_count, journals_with_data, requests_used = fetch_incremental(db, journals_to_fetch, years_to_fetch)
     print(f"✅ Fetched and inserted {papers_count} papers")
     print(f"   Journals with data: {len(journals_with_data)}/{len(journals_to_fetch)}")
     
@@ -235,7 +246,7 @@ def main():
         next_idx = start_idx
     
     completed_journals = JOURNALS[:next_idx]  # All journals up to next_idx
-    db.save_checkpoint(next_idx, completed_journals, 0)
+    db.save_checkpoint(next_idx, completed_journals, requests_used)
     
     # Generate plots
     print("\nGenerating plots...", flush=True)
