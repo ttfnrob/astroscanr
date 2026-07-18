@@ -35,7 +35,7 @@ import csv
 import sys
 from pathlib import Path
 
-from db_manager import AstroScanrDB
+from db_manager import ALL_JOURNALS, AstroScanrDB
 
 CSV_FIELDS = [
     "year",
@@ -107,11 +107,14 @@ def export_rollup(db: AstroScanrDB, journal_filter: list[str] | None) -> list[di
 
 
 def export_all_journals(db: AstroScanrDB) -> list[dict]:
-    """Export one row per (year, journal) combination (journal NOT NULL),
-    ordered by year then journal."""
+    """Export one row per (year, journal) combination, excluding the
+    'all journals' rollup rows (journal = 'ALL'), ordered by year then
+    journal."""
     rows = db.conn.execute(
-        "SELECT * FROM yearly_stats WHERE journal IS NOT NULL "
-        "ORDER BY year, journal"
+        "SELECT * FROM yearly_stats "
+        "WHERE journal IS NOT NULL AND journal != ? "
+        "ORDER BY year, journal",
+        (ALL_JOURNALS,),
     ).fetchall()
     out = []
     for r in rows:

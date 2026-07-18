@@ -9,8 +9,11 @@ Schema
 ------
 papers          One row per paper, deduplicated on `bibcode`.
 yearly_stats    Cached aggregates, one row per (year, journal) combination
-                (journal may be NULL to represent an "all journals" rollup
-                for that year).
+                (journal is the literal string 'ALL' to represent an
+                "all journals" rollup for that year, so the column is never
+                NULL). Historically NULL was used for the rollup; see
+                ALL_JOURNALS below and the one-time cleanup note in
+                get_yearly_rollup.
 checkpoint      Single-row (in practice) progress tracker for resumable
                 fetch runs across journals.
 """
@@ -23,6 +26,12 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Optional, Sequence, Union
+
+# Sentinel journal value used for the "all journals" yearly rollup row.
+# Previously the rollup row stored journal = NULL; it now stores this
+# literal string so the column is never NULL and rollup rows are trivially
+# selectable with an equality predicate.
+ALL_JOURNALS = "ALL"
 
 # ---------------------------------------------------------------------------
 # Schema
@@ -329,7 +338,7 @@ class AstroScanrDB:
                     (year,),
                 ).fetchall()
             ]
-            groups: list[Optional[str]] = [*journals, None]
+            groups: list[str] = [*journals, ALL_JOURNALS]
 
             for journal in groups:
                 stats = self._compute_stats_for_group(year, journal)
@@ -341,12 +350,12 @@ class AstroScanrDB:
         return rows_written
 
     def _compute_stats_for_group(
-        self, year: int, journal: Optional[str]
+        self, year: int, journal: str
     ) -> Optional[dict]:
         """Compute the stats dict for a single (year, journal) group.
-        `journal=None` means "all journals" for that year. Returns None
-        if the group has no papers."""
-        if journal is None:
+        `journal == ALL_JOURNALS` ('ALL') means "all journals" for that
+        year. Returns None if the group has no papers."""
+        if journal == ALL_JOURNALS:
             paper_rows = self.conn.execute(
                 "SELECT num_authors, authors, citation_count "
                 "FROM papers WHERE year = ?",
@@ -414,7 +423,7 @@ class AstroScanrDB:
         }
 
     def _upsert_yearly_stats(
-        self, year: int, journal: Optional[str], stats: dict
+        self, year: int, journal: str, stats: dict
     ) -> None:
         """Insert or replace the yearly_stats row for (year, journal)."""
         with self._cursor() as cur:
@@ -477,10 +486,17 @@ class AstroScanrDB:
         return self.conn.execute(query, params).fetchall()
 
     def get_yearly_rollup(self, year: Optional[int] = None) -> list[sqlite3.Row]:
-        """Return only the 'all journals' rollup rows (journal IS NULL),
-        optionally filtered to a single year."""
-        query = "SELECT * FROM yearly_stats WHERE journal IS NULL"
-        params: list[Any] = []
+        """Return only the 'all journals' rollup rows (journal = 'ALL'),
+        optionally filtered to a single year.
+
+        NOTE (one-time cleanup): rollup rows used to be stored with
+        journal = NULL. After deploying this change, purge any stale
+        NULL-journal rollup rows once with:
+
+            sqlite3 astroscanr.db "DELETE FROM yearly_stats WHERE journal IS NULL;"
+        """
+        query = "SELECT * FROM yearly_stats WHERE journal = ?"
+        params: list[Any] = [ALL_JOURNALS]
 
         if year is not None:
             query += " AND year = ?"

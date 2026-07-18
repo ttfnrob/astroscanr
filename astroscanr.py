@@ -153,7 +153,42 @@ def fetch_incremental(db, journals_to_fetch, years_to_fetch=None):
     
     checkpoint = db.get_checkpoint()
     requests_used = checkpoint['requests_used'] if checkpoint else 0
-    
+
+    # FIX B: Reset the daily ADS quota counter if the last run was more
+    # than 24h ago. ADS enforces a rolling daily request limit, so a
+    # persisted requests_used from a prior day must not block today's run.
+    if checkpoint and checkpoint.get('last_run') is not None:
+        last_run_raw = checkpoint['last_run']
+        last_run_ts = None
+        try:
+            # last_run is stored as an ISO-8601 timestamp (see
+            # db.save_checkpoint). Fall back to numeric epoch if a legacy
+            # integer was written (e.g. by the one-time reset migration).
+            if isinstance(last_run_raw, (int, float)):
+                last_run_ts = float(last_run_raw)
+            else:
+                s = str(last_run_raw).strip()
+                try:
+                    # Legacy numeric epoch stored as text (e.g. '0' from the
+                    # one-time reset migration).
+                    last_run_ts = float(s)
+                except ValueError:
+                    dt = datetime.datetime.fromisoformat(s)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    last_run_ts = dt.timestamp()
+        except (ValueError, TypeError):
+            last_run_ts = None
+
+        if last_run_ts is not None:
+            now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
+            if (now_ts - last_run_ts) > 86400:
+                print(
+                    f"\u2139\ufe0f Last run >24h ago; resetting daily ADS "
+                    f"quota counter (was {requests_used})."
+                )
+                requests_used = 0
+
     papers_fetched = 0
     journals_with_data = []  # Track which journals actually produced papers
     consecutive_empty_fetches = 0  # Track consecutive failed fetches (rate limit indicator)
@@ -250,11 +285,19 @@ def main():
     
     # Generate plots
     print("\nGenerating plots...", flush=True)
-    stats = db.get_yearly_stats()
-    stats_df = pd.DataFrame(stats)
-    
+    os.makedirs("docs", exist_ok=True)
+    # Plot the per-year "all journals" rollup series (one row per year),
+    # not the full per-journal breakdown — the line/stack charts are
+    # single-series-per-year and would otherwise plot multiple points per
+    # year.
+    stats = db.get_yearly_rollup()
+    # sqlite3.Row objects need explicit column names, otherwise pandas
+    # builds a frame with positional integer columns and the plot
+    # functions (which index by name, e.g. stats["year"]) all skip.
+    stats_df = pd.DataFrame([dict(r) for r in stats])
+
     # Convert to dict for plotting functions
-    stats_dict = {col: stats_df[col].tolist() for col in stats_df.columns}
+    stats_dict = {col: stats_df[col].tolist() for col in stats_df.columns} if not stats_df.empty else {}
     
     plot_average_authors(stats_dict)
     plot_avg_and_max_authors_log(stats_dict)
@@ -275,7 +318,7 @@ def main():
 # Plotting functions (copied from original)
 # ============================================================================
 
-def plot_average_authors(stats, output_dir="."):
+def plot_average_authors(stats, output_dir="docs"):
     """Plot 1: Average authors per paper over time."""
     # Guard against empty data
     if not stats.get("year") or len(stats["year"]) == 0:
@@ -290,11 +333,11 @@ def plot_average_authors(stats, output_dir="."):
     ax.set_title(f"Collaboration Trend: Average Authors per Paper (1827–{CURRENT_YEAR})", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/01-avg-authors.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-01-avg-authors.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 01-avg-authors.png")
+    print("✓ Saved: docs/astroscanr-01-avg-authors.png")
 
-def plot_avg_and_max_authors_log(stats, output_dir="."):
+def plot_avg_and_max_authors_log(stats, output_dir="docs"):
     """Plot 2: Avg and max authors on log scale."""
     if not stats.get("year") or len(stats["year"]) == 0:
         print("⚠️ Skipped: 02-avg-max-authors.png (no data)")
@@ -310,11 +353,11 @@ def plot_avg_and_max_authors_log(stats, output_dir="."):
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/02-avg-max-authors.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-02-avg-max-log.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 02-avg-max-authors.png")
+    print("✓ Saved: docs/astroscanr-02-avg-max-log.png")
 
-def plot_author_distribution(stats, output_dir="."):
+def plot_author_distribution(stats, output_dir="docs"):
     """Plot 3: Distribution of single/multi-author papers."""
     if not stats.get("year") or len(stats["year"]) == 0:
         print("⚠️ Skipped: 03-author-dist.png (no data)")
@@ -337,11 +380,11 @@ def plot_author_distribution(stats, output_dir="."):
     ax.legend(loc="upper left", fontsize=10)
     ax.set_ylim(0, 100)
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/03-author-dist.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-03-distribution.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 03-author-dist.png")
+    print("✓ Saved: docs/astroscanr-03-distribution.png")
 
-def plot_single_author_decline(stats, output_dir="."):
+def plot_single_author_decline(stats, output_dir="docs"):
     """Plot 4: Decline of single-author papers."""
     if not stats.get("year") or len(stats["year"]) == 0:
         print("⚠️ Skipped: 04-single-author.png (no data)")
@@ -355,11 +398,11 @@ def plot_single_author_decline(stats, output_dir="."):
     ax.set_title(f"The Solo Researcher Decline (1827–{CURRENT_YEAR})", fontsize=14, fontweight="bold")
     ax.legend()
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/04-single-author.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-04-citation-weighted.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 04-single-author.png")
+    print("✓ Saved: docs/astroscanr-04-citation-weighted.png")
 
-def plot_citation_pct_single_author(stats, output_dir="."):
+def plot_citation_pct_single_author(stats, output_dir="docs"):
     """Plot 5: Citation percentage of single-author papers."""
     if not stats.get("year") or len(stats["year"]) == 0:
         print("⚠️ Skipped: 05-citations.png (no data)")
@@ -372,11 +415,11 @@ def plot_citation_pct_single_author(stats, output_dir="."):
     ax.set_title(f"Citation Impact: Single-Author Papers (1827–{CURRENT_YEAR})", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/05-citations.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-05-population-papers.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 05-citations.png")
+    print("✓ Saved: docs/astroscanr-05-population-papers.png")
 
-def plot_people_vs_papers_ratio(stats, output_dir="."):
+def plot_people_vs_papers_ratio(stats, output_dir="docs"):
     """Plot 6: Unique authors per paper ratio."""
     if not stats.get("year") or len(stats["year"]) == 0:
         print("⚠️ Skipped: 06-ratio.png (no data)")
@@ -390,9 +433,9 @@ def plot_people_vs_papers_ratio(stats, output_dir="."):
     ax.set_title(f"Collaborator Pool Growth (1827–{CURRENT_YEAR})", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(f"{output_dir}/06-ratio.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{output_dir}/astroscanr-06-ratio.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("✓ Saved: 06-ratio.png")
+    print("✓ Saved: docs/astroscanr-06-ratio.png")
 
 if __name__ == "__main__":
     main()
